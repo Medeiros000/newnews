@@ -1,4 +1,13 @@
 -- CreateTable
+CREATE TABLE "User" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "email" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
+);
+
+-- CreateTable
 CREATE TABLE "news" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "category_id" TEXT NOT NULL,
@@ -11,3 +20,6 @@ CREATE TABLE "news" (
     "author" TEXT NOT NULL,
     "source" TEXT NOT NULL
 );
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
