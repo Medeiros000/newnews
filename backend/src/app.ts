@@ -12,11 +12,6 @@ import { healthRouter } from "./routes/health.js";
 import { usersRouter } from "./routes/users.js";
 import { newsRouter } from "./routes/news.js";
 
-export interface ApiErrorResponse {
-    error: string;
-    issues?: unknown[];
-}
-
 export class App {
     public readonly instance: Application;
 
@@ -39,14 +34,14 @@ export class App {
     }
 
     private setupErrorHandling(): void {
-        this.instance.use((_request: Request, response: Response<ApiErrorResponse>): void => {
+        this.instance.use((_request: Request, response: Response): void => {
             response.status(404).json({ error: "Not found" });
         });
 
         const errorHandler: ErrorRequestHandler = (
             error: unknown,
             _request: Request,
-            response: Response<ApiErrorResponse>,
+            response: Response,
             _next: NextFunction
         ): void => {
             if (error instanceof ZodError) {
