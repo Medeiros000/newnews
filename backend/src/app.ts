@@ -1,10 +1,21 @@
-import express, { type Application, type Request, type Response, type ErrorRequestHandler } from "express";
+import express, {
+    type Application,
+    type Request,
+    type Response,
+    type NextFunction,
+    type ErrorRequestHandler,
+} from "express";
 import type { Server } from "http";
 import { ZodError } from "zod";
 import indexRouter from "./routes/index.js";
 import { healthRouter } from "./routes/health.js";
 import { usersRouter } from "./routes/users.js";
 import { newsRouter } from "./routes/news.js";
+
+export interface ApiErrorResponse {
+    error: string;
+    issues?: unknown[];
+}
 
 export class App {
     public readonly instance: Application;
@@ -28,11 +39,16 @@ export class App {
     }
 
     private setupErrorHandling(): void {
-        this.instance.use((_request: Request, response: Response) => {
+        this.instance.use((_request: Request, response: Response<ApiErrorResponse>): void => {
             response.status(404).json({ error: "Not found" });
         });
 
-        const errorHandler: ErrorRequestHandler = (error, _request, response, _next) => {
+        const errorHandler: ErrorRequestHandler = (
+            error: unknown,
+            _request: Request,
+            response: Response<ApiErrorResponse>,
+            _next: NextFunction
+        ): void => {
             if (error instanceof ZodError) {
                 response.status(400).json({
                     error: "Invalid request",

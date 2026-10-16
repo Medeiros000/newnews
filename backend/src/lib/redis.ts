@@ -1,21 +1,22 @@
-import { Redis } from "ioredis";
+import { Redis, type RedisOptions } from "ioredis";
 
 export class RedisService {
-    private client: Redis;
+    private readonly client: Redis;
 
-    constructor(redisUrl: string) {
+    constructor(redisUrl: string, options?: RedisOptions) {
         this.client = new Redis(redisUrl, {
             lazyConnect: true,
             maxRetriesPerRequest: 1,
-            retryStrategy: (times) => Math.min(times * 100, 3000),
+            retryStrategy: (times: number): number => Math.min(times * 100, 3000),
+            ...options,
         });
 
-        this.client.on("error", () => {
+        this.client.on("error", (_error: Error) => {
             // Suppress unhandled errors so process won't crash if Redis is unavailable
         });
     }
 
-    public async get<T>(key: string): Promise<T | null> {
+    public async get<T = unknown>(key: string): Promise<T | null> {
         try {
             const raw = await this.client.get(key);
             if (!raw) return null;
@@ -25,7 +26,7 @@ export class RedisService {
         }
     }
 
-    public async set(key: string, value: unknown, ttlSeconds = 300): Promise<void> {
+    public async set(key: string, value: unknown, ttlSeconds: number = 300): Promise<void> {
         try {
             await this.client.set(key, JSON.stringify(value), "EX", ttlSeconds);
         } catch {

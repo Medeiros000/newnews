@@ -1,15 +1,20 @@
+import type { Server } from "http";
 import { App } from "./app.js";
 import { env } from "./config/env.js";
 
 const app = new App();
 
-const server = app.listen(env.PORT, () => {
+const server: Server = app.listen(env.PORT, () => {
     console.log(`API server listening on http://localhost:${env.PORT}`);
 });
 
-const shutdown = (signal: string) => {
+const shutdown = (signal: "SIGINT" | "SIGTERM"): void => {
     console.log(`Received ${signal}, shutting down...`);
-    server.close(() => {
+    server.close((error?: Error) => {
+        if (error) {
+            console.error("Error while closing HTTP server:", error);
+            process.exit(1);
+        }
         console.log("HTTP server closed.");
         process.exit(0);
     });
