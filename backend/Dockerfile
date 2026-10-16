@@ -1,11 +1,13 @@
-FROM node:24-alpine
+FROM node:24-slim
 
 WORKDIR /app
 
 COPY package*.json ./
-RUN apk add --no-cache --virtual .build-deps python3 make g++ \
+RUN apt-get update \
+	&& apt-get install -y --no-install-recommends python3 make g++ \
 	&& npm ci \
-	&& apk del .build-deps
+	&& apt-get purge -y --auto-remove python3 make g++ \
+	&& rm -rf /var/lib/apt/lists/*
 
 COPY . .
 RUN npx prisma generate

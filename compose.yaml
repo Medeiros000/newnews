@@ -24,6 +24,7 @@ services:
       - /app/node_modules
     environment:
       - DATABASE_URL=file:./dev.db
+      # - REDIS_URL=redis://redis:6379
       - REDIS_URL=redis://host.docker.internal:6379
       - PORT=3000
     extra_hosts:
