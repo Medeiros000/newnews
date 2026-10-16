@@ -1,7 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { z } from "zod";
-import { prisma } from "../lib/prisma.js";
-import { getCache, setCache } from "../lib/redis.js";
+import { prisma, cache } from "../container.js";
 
 const newsQuerySchema = z
     .object({
@@ -58,7 +57,7 @@ async function searchNews(
     )}:page:${page}:limit:${limit}`;
 
     try {
-        const cachedData = await getCache<NewsListPayload>(cacheKey);
+        const cachedData = await cache.get<NewsListPayload>(cacheKey);
         if (cachedData) {
             return response.status(200).json({
                 source: "cache",
@@ -90,7 +89,7 @@ async function searchNews(
             data: news,
         };
 
-        await setCache(cacheKey, responsePayload, 180);
+        await cache.set(cacheKey, responsePayload, 180);
 
         return response.status(200).json({
             source: "database",
@@ -117,7 +116,7 @@ async function getNewsById(
 
     try {
         // 1. Check cache (Article cache hit?)
-        const cachedNews = await getCache(cacheKey);
+        const cachedNews = await cache.get(cacheKey);
         if (cachedNews) {
             response.setHeader("X-Cache", "HIT");
             response.json({ success: true, data: cachedNews });
@@ -133,7 +132,7 @@ async function getNewsById(
         }
 
         // 3. Save to cache with a 5-minute TTL (300s)
-        await setCache(cacheKey, news, 300);
+        await cache.set(cacheKey, news, 300);
 
         response.setHeader("X-Cache", "MISS");
         response.json({ success: true, data: news });

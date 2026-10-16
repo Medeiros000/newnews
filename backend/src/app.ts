@@ -1,33 +1,65 @@
-import express, { type ErrorRequestHandler } from "express";
+import express, {
+    type Application,
+    type Request,
+    type Response,
+    type NextFunction,
+    type ErrorRequestHandler,
+} from "express";
+import type { Server } from "http";
 import { ZodError } from "zod";
 import indexRouter from "./routes/index.js";
 import { healthRouter } from "./routes/health.js";
 import { usersRouter } from "./routes/users.js";
 import { newsRouter } from "./routes/news.js";
 
-export const app = express();
+export class App {
+    public readonly instance: Application;
 
-app.use(express.json({ limit: "1mb" }));
-app.use("/", indexRouter);
-app.use("/api/users", usersRouter);
-app.use("/api/health", healthRouter);
-app.use("/api/news", newsRouter);
+    constructor() {
+        this.instance = express();
+        this.setupMiddlewares();
+        this.setupRoutes();
+        this.setupErrorHandling();
+    }
 
-app.use((_request, response) => {
-	response.status(404).json({ error: "Not found" });
-});
+    private setupMiddlewares(): void {
+        this.instance.use(express.json({ limit: "1mb" }));
+    }
 
-const errorHandler: ErrorRequestHandler = (error, _request, response, _next) => {
-	if (error instanceof ZodError) {
-		response.status(400).json({
-			error: "Invalid request",
-			issues: error.issues,
-		});
-		return;
-	}
+    private setupRoutes(): void {
+        this.instance.use("/", indexRouter);
+        this.instance.use("/api/users", usersRouter);
+        this.instance.use("/api/health", healthRouter);
+        this.instance.use("/api/news", newsRouter);
+    }
 
-	console.error(error);
-	response.status(500).json({ error: "Internal server error" });
-};
+    private setupErrorHandling(): void {
+        this.instance.use((_request: Request, response: Response): void => {
+            response.status(404).json({ error: "Not found" });
+        });
 
-app.use(errorHandler);
+        const errorHandler: ErrorRequestHandler = (
+            error: unknown,
+            _request: Request,
+            response: Response,
+            _next: NextFunction
+        ): void => {
+            if (error instanceof ZodError) {
+                response.status(400).json({
+                    error: "Invalid request",
+                    issues: error.issues,
+                });
+                return;
+            }
+
+            console.error(error);
+            response.status(500).json({ error: "Internal server error" });
+        };
+
+        this.instance.use(errorHandler);
+    }
+
+    public listen(port: number | string, callback?: () => void): Server {
+        return this.instance.listen(port, callback);
+    }
+}

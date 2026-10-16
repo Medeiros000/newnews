@@ -1,10 +1,26 @@
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
-import { PrismaClient } from "../../generated/prisma/client.js";
-import { env } from "../config/env.js";
+import { PrismaClient, type Prisma } from "../../generated/prisma/client.js";
 
-const adapter = new PrismaBetterSqlite3({
-	url: env.DATABASE_URL,
-	timeout: 10_000,
-});
+export interface PrismaServiceOptions {
+    databaseUrl: string;
+    timeout?: number;
+    prismaOptions?: Prisma.PrismaClientBaseOptions;
+}
 
-export const prisma = new PrismaClient({ adapter });
+export class PrismaService extends PrismaClient {
+    constructor(config: string | PrismaServiceOptions) {
+        const options: PrismaServiceOptions =
+            typeof config === "string" ? { databaseUrl: config } : config;
+
+        const adapter = new PrismaBetterSqlite3({
+            url: options.databaseUrl,
+            timeout: options.timeout ?? 10_000,
+        });
+
+        super({
+            ...options.prismaOptions,
+            adapter,
+        });
+    }
+}
+
