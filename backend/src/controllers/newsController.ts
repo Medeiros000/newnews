@@ -15,6 +15,16 @@ const newsQuerySchema = z
         ...pagination,
     }));
 
+// Schema para a rota de notícias relacionadas
+const relatedNewsSchema = z.object({
+    params: z.object({
+        id: z.string().min(1, "O ID da notícia é obrigatório"),
+    }),
+    query: z.object({
+        limit: z.coerce.number().int().min(1).max(50).default(4),
+    }),
+});
+
 // Define the type for the response payload
 type NewsListPayload = {
     type: "search" | "all";
@@ -101,7 +111,6 @@ async function searchNews(
     }
 }
 
-
 async function getNewsById(
     request: Request,
     response: Response,
@@ -142,7 +151,91 @@ async function getNewsById(
     }
 }
 
+async function getRelatedNews(
+    request: Request,
+    response: Response,
+    next: NextFunction
+) {
+    const result = relatedNewsSchema.safeParse({
+        params: request.params,
+        query: request.query,
+    });
+
+    if (!result.success) {
+        response.status(400).json({
+            error: "Invalid parameters",
+            issues: result.error.issues,
+        });
+        return;
+    }
+
+    const { id } = result.data.params;
+    const { limit } = result.data.query;
+
+    const cacheKey = `news:${id}:related:limit:${limit}`;
+
+    try {
+        // 1. Tenta recuperar do Cache Redis
+        const cachedData = await getCache<any>(cacheKey);
+        if (cachedData) {
+            response.setHeader("X-Cache", "HIT");
+            return response.status(200).json({
+                success: true,
+                data: {
+                    news: cachedData,
+                },
+            });
+        }
+
+        // 2. Busca a notícia principal para pegar a category_id
+        const currentNews = await prisma.news.findUnique({
+            where: { id },
+            select: { id: true, category_id: true },
+        });
+
+        if (!currentNews) {
+            return response.status(404).json({
+                success: false,
+                error: "Notícia não encontrada",
+            });
+        }
+
+        // 3. Busca notícias da mesma categoria excluindo a atual
+        const relatedNews = await prisma.news.findMany({
+            where: {
+                category_id: currentNews.category_id,
+                id: { not: currentNews.id },
+            },
+            take: limit,
+            orderBy: {
+                published_at: "desc",
+            },
+            select: {
+                id: true,
+                title: true,
+                summary: true,
+                image_url: true,
+                published_at: true,
+            },
+        });
+
+        // 4. Armazena no Redis (TTL de 5 minutos / 300s)
+        await setCache(cacheKey, relatedNews, 300);
+
+        response.setHeader("X-Cache", "MISS");
+        return response.status(200).json({
+            success: true,
+            data: {
+                news: relatedNews,
+            },
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
 export const newsController = {
     searchNews,
     getNewsById,
+    getRelatedNews,
 };
