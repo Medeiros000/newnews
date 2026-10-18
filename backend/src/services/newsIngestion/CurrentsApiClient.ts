@@ -1,3 +1,4 @@
+import { env } from '../../config/env.js';
 
 export interface CurrentsArticle {
   id?: string;
@@ -6,6 +7,7 @@ export interface CurrentsArticle {
   summary?: string;
   content?: string;
   image?: string;
+  url?: string;
   published?: string;
   author?: string;
   domain?: string;
@@ -17,18 +19,18 @@ export class CurrentsApiClient {
   private baseUrl = 'https://api.currentsapi.services/v1/latest-news';
 
   constructor() {
-    this.apiKey = process.env.CURRENTS_API_KEY || '';
+    this.apiKey = env.CURRENTS_API_KEY || '';
     if (!this.apiKey) {
-      console.warn('⚠️ AVISO: CURRENTS_API_KEY não está configurada.');
+      console.warn('⚠️ AVISO: CURRENTS_API_KEY não está configurada no ambiente.');
     }
   }
 
   async fetchLatestNews(): Promise<CurrentsArticle[]> {
     try {
       const url = `${this.baseUrl}?language=pt&apiKey=${this.apiKey}`;
-      
+
       const response = await fetch(url, {
-        signal: AbortSignal.timeout(8000), // Timeout de 8 segundos
+        signal: AbortSignal.timeout(8000),
       });
 
       if (response.status === 401) {
@@ -49,10 +51,10 @@ export class CurrentsApiClient {
       const data = await response.json() as { news?: CurrentsArticle[] };
       return data.news || [];
     } catch (error: any) {
-      if (error.name === 'AbortError') {
-        console.error(' Timeout: A Currents API demorou muito para responder.');
+      if (error.name === 'AbortError' || error.name === 'TimeoutError') {
+        console.error('❌ Timeout: A Currents API demorou mais de 8s para responder.');
       } else {
-        console.error(' Erro ao conectar com a Currents API:', error.message);
+        console.error('❌ Erro ao conectar com a Currents API:', error.message);
       }
       return [];
     }

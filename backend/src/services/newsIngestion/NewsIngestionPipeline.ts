@@ -1,4 +1,3 @@
-
 import { CurrentsApiClient } from './CurrentsApiClient.js';
 import { NewsNormalizer } from './NewsNormalizer.js';
 import { NewsValidator } from './NewsValidator.js';
@@ -15,20 +14,17 @@ export class NewsIngestionPipeline {
   ) {}
 
   async execute(defaultCategoryId: string) {
-    console.log(' Iniciando ingestão de notícias (POO)...');
+    console.log('🔄 Iniciando ingestão de notícias (POO)...');
 
     const rawArticles = await this.apiClient.fetchLatestNews();
     if (rawArticles.length === 0) {
-      console.log(' Nenhuma notícia obtida da API.');
+      console.log('⚠️ Nenhuma notícia obtida da API.');
       return;
     }
 
-    // Limita o lote N+1 (ex: 11 itens)
-    const limitedRaw = rawArticles.slice(0, 11);
-
-    // 1. Normaliza e valida todas do lote
+    // Processa todos os artigos retornados pela API (sem slice arbitrário)
     const processedItems = [];
-    for (const raw of limitedRaw) {
+    for (const raw of rawArticles) {
       const normalized = this.normalizer.normalize(raw, defaultCategoryId);
       const validated = this.validator.validate(normalized);
       if (validated) {
@@ -36,21 +32,21 @@ export class NewsIngestionPipeline {
       }
     }
 
-    // 2. Remove duplicadas em lote
+    // Remove duplicadas em lote (1 única query ao banco)
     const uniqueItems = await this.deduplicator.filterDuplicates(processedItems);
 
-    // 3. Salva no banco com tratamento de erro individual (tolerância a falhas)
+    // Salva com tolerância a falhas individuais (1 erro não cancela o lote todo)
     let savedCount = 0;
     for (const item of uniqueItems) {
       try {
         const saved = await this.repository.save(item);
-        console.log(` Notícia salva com sucesso! ID: ${saved.id}`);
+        console.log(`✅ Notícia salva! ID: ${saved.id} | "${item.title.slice(0, 60)}..."`);
         savedCount++;
       } catch (err: any) {
-        console.error(` Erro ao salvar a notícia "${item.title}":`, err.message);
+        console.error(`❌ Erro ao salvar "${item.title.slice(0, 60)}": ${err.message}`);
       }
     }
 
-    console.log(` Ingestão finalizada! ${savedCount} notícias salvas com sucesso.`);
+    console.log(`✨ Ingestão finalizada! ${savedCount}/${uniqueItems.length} notícias únicas salvas.`);
   }
 }

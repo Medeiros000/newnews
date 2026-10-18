@@ -1,4 +1,3 @@
-
 import { CurrentsArticle } from './CurrentsApiClient.js';
 
 export interface NormalizedNews {
@@ -15,11 +14,20 @@ export interface NormalizedNews {
 
 export class NewsNormalizer {
   private stripHtmlTags(str: string): string {
-    return str.replace(/<[^>]*>?/gm, '');
+    return str.replace(/<[^>]*>?/gm, '').trim();
   }
 
-  normalize(raw: CurrentsArticle, categoryId: string): NormalizedNews {
-    // Trunca o título para respeitar o limite de 255 caracteres do banco
+  private extractDomain(url?: string): string {
+    if (!url) return 'Currents API';
+    try {
+      return new URL(url).hostname.replace(/^www\./, '');
+    } catch {
+      return 'Currents API';
+    }
+  }
+
+  normalize(raw: CurrentsArticle, category_id: string): NormalizedNews {
+    // Título truncado a 255 chars
     const rawTitle = raw.title || 'Notícia sem título';
     const title = rawTitle.slice(0, 255);
 
@@ -29,29 +37,32 @@ export class NewsNormalizer {
     const rawContent = raw.content || raw.description || 'Conteúdo não informado.';
     const content = this.stripHtmlTags(rawContent);
 
-    const imageUrl = raw.image && raw.image !== 'None' 
-      ? raw.image 
+    const image_url = raw.image && raw.image !== 'None'
+      ? raw.image
       : 'https://via.placeholder.com/800x400';
 
     // Parse seguro de data com fallback
-    let publishedAt = new Date();
+    let published_at = new Date();
     if (raw.published) {
-      const parsedDate = new Date(raw.published);
-      if (!isNaN(parsedDate.getTime())) {
-        publishedAt = parsedDate;
+      const parsed = new Date(raw.published);
+      if (!isNaN(parsed.getTime())) {
+        published_at = parsed;
       }
     }
 
+    // Extrai o domínio real da URL em vez de usar o campo "language" como fallback
+    const source = this.extractDomain(raw.url);
+
     return {
-      category_id: categoryId,
+      category_id,
       badge_bg: 'bg-blue-500',
       title,
       summary,
       content,
-      image_url: imageUrl,
-      published_at: publishedAt,
+      image_url,
+      published_at,
       author: raw.author || 'Redação',
-      source: raw.domain || raw.language || 'Currents API',
+      source,
     };
   }
 }
