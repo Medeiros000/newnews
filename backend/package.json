@@ -9,7 +9,6 @@
     "start": "node dist/server.js",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
-    "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
     "news:ingest": "tsx src/services/newsIngestion/run.ts"
   },
