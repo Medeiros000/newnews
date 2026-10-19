@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { z } from "zod";
-import { prisma } from "../lib/prisma.js";
+import { prisma } from "../container.js";
 
 const createUserSchema = z.object({
   email: z.string().trim().email(),

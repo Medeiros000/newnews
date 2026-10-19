@@ -1,7 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { z } from "zod";
-import { prisma } from "../lib/prisma.js";
-import { getCache, setCache } from "../lib/redis.js";
+import { prisma, cache } from "../container.js";
 
 const newsQuerySchema = z
     .object({
@@ -14,6 +13,16 @@ const newsQuerySchema = z
         query: query || q,
         ...pagination,
     }));
+
+// Schema para a rota de notícias relacionadas
+const relatedNewsSchema = z.object({
+    params: z.object({
+        id: z.string().min(1, "O ID da notícia é obrigatório"),
+    }),
+    query: z.object({
+        limit: z.coerce.number().int().min(1).max(50).default(4),
+    }),
+});
 
 // Define the type for the response payload
 type NewsListPayload = {
@@ -58,7 +67,7 @@ async function searchNews(
     )}:page:${page}:limit:${limit}`;
 
     try {
-        const cachedData = await getCache<NewsListPayload>(cacheKey);
+        const cachedData = await cache.get<NewsListPayload>(cacheKey);
         if (cachedData) {
             return response.status(200).json({
                 source: "cache",
@@ -90,7 +99,7 @@ async function searchNews(
             data: news,
         };
 
-        await setCache(cacheKey, responsePayload, 180);
+        await cache.set(cacheKey, responsePayload, 180);
 
         return response.status(200).json({
             source: "database",
@@ -100,7 +109,6 @@ async function searchNews(
         next(error);
     }
 }
-
 
 async function getNewsById(
     request: Request,
@@ -117,7 +125,7 @@ async function getNewsById(
 
     try {
         // 1. Check cache (Article cache hit?)
-        const cachedNews = await getCache(cacheKey);
+        const cachedNews = await cache.get(cacheKey);
         if (cachedNews) {
             response.setHeader("X-Cache", "HIT");
             response.json({ success: true, data: cachedNews });
@@ -133,7 +141,7 @@ async function getNewsById(
         }
 
         // 3. Save to cache with a 5-minute TTL (300s)
-        await setCache(cacheKey, news, 300);
+        await cache.set(cacheKey, news, 300);
 
         response.setHeader("X-Cache", "MISS");
         response.json({ success: true, data: news });
@@ -142,7 +150,91 @@ async function getNewsById(
     }
 }
 
+async function getRelatedNews(
+    request: Request,
+    response: Response,
+    next: NextFunction
+) {
+    const result = relatedNewsSchema.safeParse({
+        params: request.params,
+        query: request.query,
+    });
+
+    if (!result.success) {
+        response.status(400).json({
+            error: "Invalid parameters",
+            issues: result.error.issues,
+        });
+        return;
+    }
+
+    const { id } = result.data.params;
+    const { limit } = result.data.query;
+
+    const cacheKey = `news:${id}:related:limit:${limit}`;
+
+    try {
+        // 1. Tenta recuperar do Cache Redis
+        const cachedData = await getCache<any>(cacheKey);
+        if (cachedData) {
+            response.setHeader("X-Cache", "HIT");
+            return response.status(200).json({
+                success: true,
+                data: {
+                    news: cachedData,
+                },
+            });
+        }
+
+        // 2. Busca a notícia principal para pegar a category_id
+        const currentNews = await prisma.news.findUnique({
+            where: { id },
+            select: { id: true, category_id: true },
+        });
+
+        if (!currentNews) {
+            return response.status(404).json({
+                success: false,
+                error: "Notícia não encontrada",
+            });
+        }
+
+        // 3. Busca notícias da mesma categoria excluindo a atual
+        const relatedNews = await prisma.news.findMany({
+            where: {
+                category_id: currentNews.category_id,
+                id: { not: currentNews.id },
+            },
+            take: limit,
+            orderBy: {
+                published_at: "desc",
+            },
+            select: {
+                id: true,
+                title: true,
+                summary: true,
+                image_url: true,
+                published_at: true,
+            },
+        });
+
+        // 4. Armazena no Redis (TTL de 5 minutos / 300s)
+        await setCache(cacheKey, relatedNews, 300);
+
+        response.setHeader("X-Cache", "MISS");
+        return response.status(200).json({
+            success: true,
+            data: {
+                news: relatedNews,
+            },
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
 export const newsController = {
     searchNews,
     getNewsById,
+    getRelatedNews,
 };

@@ -7,3 +7,5 @@ export const newsRouter = Router();
 newsRouter.get('/', newsController.searchNews);
 
 newsRouter.get("/:id", newsController.getNewsById);
+
+newsRouter.get("/:id/related", newsController.getRelatedNews);
