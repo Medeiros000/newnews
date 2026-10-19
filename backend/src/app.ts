@@ -4,16 +4,16 @@ import express, {
     type Response,
     type NextFunction,
     type ErrorRequestHandler,
-} from "express";
-import type { Server } from "http";
-import { ZodError } from "zod";
-import indexRouter from "./routes/index.js";
-import { healthRouter } from "./routes/health.js";
-import { usersRouter } from "./routes/users.js";
-import { newsRouter } from "./routes/news.js";
-import { PrismaService } from "./lib/prisma.js";
-import { RedisService } from "./lib/redis.js";
-import { NewsIngestionPipeline } from "./services/newsIngestion/NewsIngestionPipeline.js";
+} from 'express';
+import type { Server } from 'http';
+import { ZodError } from 'zod';
+import indexRouter from './routes/index.js';
+import { healthRouter } from './routes/health.js';
+import { usersRouter } from './routes/users.js';
+import { newsRouter } from './routes/news.js';
+import { PrismaService } from './lib/prisma.js';
+import { RedisService } from './lib/redis.js';
+import { NewsIngestionPipeline } from './services/newsIngestion/NewsIngestionPipeline.js';
 
 const INGESTION_INTERVAL_MS = 60 * 60 * 1000; // 1 hora
 
@@ -24,7 +24,7 @@ export class App {
 
     constructor(
         private readonly prisma: PrismaService,
-        private readonly cache?: RedisService
+        private readonly cache?: RedisService,
     ) {
         this.instance = express();
         this.pipeline = new NewsIngestionPipeline(prisma, cache);
@@ -35,37 +35,37 @@ export class App {
     }
 
     private setupMiddlewares(): void {
-        this.instance.use(express.json({ limit: "1mb" }));
+        this.instance.use(express.json({ limit: '1mb' }));
     }
 
     private setupRoutes(): void {
-        this.instance.use("/", indexRouter);
-        this.instance.use("/api/users", usersRouter);
-        this.instance.use("/api/health", healthRouter);
-        this.instance.use("/api/news", newsRouter);
+        this.instance.use('/', indexRouter);
+        this.instance.use('/api/users', usersRouter);
+        this.instance.use('/api/health', healthRouter);
+        this.instance.use('/api/news', newsRouter);
     }
 
     private setupErrorHandling(): void {
         this.instance.use((_request: Request, response: Response): void => {
-            response.status(404).json({ error: "Not found" });
+            response.status(404).json({ error: 'Not found' });
         });
 
         const errorHandler: ErrorRequestHandler = (
             error: unknown,
             _request: Request,
             response: Response,
-            _next: NextFunction
+            _next: NextFunction,
         ): void => {
             if (error instanceof ZodError) {
                 response.status(400).json({
-                    error: "Invalid request",
+                    error: 'Invalid request',
                     issues: error.issues,
                 });
                 return;
             }
 
             console.error(error);
-            response.status(500).json({ error: "Internal server error" });
+            response.status(500).json({ error: 'Internal server error' });
         };
 
         this.instance.use(errorHandler);
@@ -83,7 +83,9 @@ export class App {
         // Executa imediatamente ao iniciar e depois a cada hora
         run();
         this.ingestionTimer = setInterval(run, INGESTION_INTERVAL_MS);
-        console.log(`⏱️  Ingestão de notícias agendada para rodar a cada ${INGESTION_INTERVAL_MS / 60_000} minutos.`);
+        console.log(
+            `⏱️  Ingestão de notícias agendada para rodar a cada ${INGESTION_INTERVAL_MS / 60_000} minutos.`,
+        );
     }
 
     public stopIngestionScheduler(): void {
