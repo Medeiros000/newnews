@@ -33,4 +33,34 @@ export class RedisService {
             // Cache failures are non-blocking
         }
     }
+
+    public async del(key: string | string[]): Promise<void> {
+        try {
+            const keys = Array.isArray(key) ? key : [key];
+            if (keys.length > 0) {
+                await this.client.del(...keys);
+            }
+        } catch {
+            // Cache failures are non-blocking
+        }
+    }
+
+    public async delByPattern(pattern: string): Promise<void> {
+        try {
+            const keys = await this.client.keys(pattern);
+            if (keys.length > 0) {
+                await this.client.del(...keys);
+            }
+        } catch {
+            // Cache failures are non-blocking
+        }
+    }
+
+    public async disconnect(): Promise<void> {
+        try {
+            await this.client.quit();
+        } catch {
+            // Cache failures are non-blocking
+        }
+    }
 }
