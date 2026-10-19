@@ -1,6 +1,8 @@
 # Backend — New News
 
-API backend do New News, construída com **Node.js + Express + TypeScript + Prisma + SQLite + Zod**.
+API backend do New News, construída com **Node.js + Express + TypeScript + Prisma + SQLite + Redis + Zod**.
+
+As notícias exibidas no app são obtidas automaticamente da **[Currents API](https://currentsapi.services/)** e armazenadas localmente no banco de dados.
 
 ---
 
@@ -17,14 +19,17 @@ Crie o arquivo `.env` com base no `.env.example`:
 ```env
 DATABASE_URL="file:./dev.db"
 PORT=3000
+REDIS_URL="redis://localhost:6379"
+CURRENTS_API_KEY="sua_chave_aqui"
 ```
 
-Gere o Prisma Client, aplique as migrations e execute o seed:
+> Obtenha uma chave gratuita em [currentsapi.services](https://currentsapi.services/).
+
+Gere o Prisma Client e aplique as migrations:
 
 ```bash
 npm run db:generate
 npm run db:migrate
-npm run db:seed
 ```
 
 Inicie o servidor:
@@ -52,33 +57,65 @@ http://localhost:3000
 | `npm start`           | Executa o projeto compilado                 |
 | `npm run db:generate` | Gera o Prisma Client                        |
 | `npm run db:migrate`  | Cria e aplica migrations                    |
-| `npm run db:seed`     | Popula o banco com dados de desenvolvimento |
 | `npm run db:studio`   | Abre o Prisma Studio                        |
 
 ---
 
 ## 🛠️ Stack
 
-| Responsabilidade | Tecnologia  |
-| ---------------- | ----------- |
-| Runtime          | Node.js 20+ |
-| Framework HTTP   | Express     |
-| Linguagem        | TypeScript  |
-| ORM              | Prisma      |
-| Banco de dados   | SQLite      |
-| Validação        | Zod         |
-| Containerização  | Docker      |
+| Responsabilidade    | Tecnologia      |
+| ------------------- | --------------- |
+| Runtime             | Node.js 20+     |
+| Framework HTTP      | Express 5       |
+| Linguagem           | TypeScript      |
+| ORM                 | Prisma          |
+| Banco de dados      | SQLite          |
+| Cache               | Redis (ioredis) |
+| Validação           | Zod             |
+| Fonte de notícias   | Currents API    |
+| Containerização     | Docker          |
+
+---
+
+## 📰 Ingestão de Notícias (Currents API)
+
+O backend busca notícias automaticamente da **[Currents API](https://currentsapi.services/)** através de um pipeline de ingestão que roda ao iniciar o servidor e depois **a cada hora**.
+
+### Pipeline
+
+```
+CurrentsApiClient → NewsNormalizer → NewsValidator → NewsDeduplicator → NewsRepository
+```
+
+| Etapa                 | Responsabilidade                                              |
+| --------------------- | ------------------------------------------------------------- |
+| `CurrentsApiClient`   | Faz a requisição à API e retorna os artigos brutos            |
+| `NewsNormalizer`      | Transforma o formato da API no schema interno da aplicação    |
+| `NewsValidator`       | Descarta artigos inválidos ou incompletos                     |
+| `NewsDeduplicator`    | Filtra artigos já existentes no banco (1 única query em lote) |
+| `NewsRepository`      | Persiste os artigos novos e invalida o cache de listagem      |
+
+Após cada ingestão bem-sucedida, o cache Redis das listagens (`news:list:*`) é invalidado automaticamente.
+
+### Variável de ambiente obrigatória
+
+| Variável           | Descrição                        |
+| ------------------ | -------------------------------- |
+| `CURRENTS_API_KEY` | Chave de acesso à Currents API   |
 
 ---
 
 ## ⚙️ Variáveis de Ambiente
 
-| Variável       | Exemplo         | Descrição                         |
-| -------------- | --------------- | --------------------------------- |
-| `DATABASE_URL` | `file:./dev.db` | URL de conexão com o banco SQLite |
-| `PORT`         | `3000`          | Porta utilizada pela API          |
+| Variável               | Exemplo                      | Descrição                                  |
+| ---------------------- | ---------------------------- | ------------------------------------------ |
+| `DATABASE_URL`         | `file:./dev.db`              | URL de conexão com o banco SQLite          |
+| `PORT`                 | `3000`                       | Porta utilizada pela API                   |
+| `REDIS_URL`            | `redis://localhost:6379`     | URL de conexão com o Redis (cache)         |
+| `CURRENTS_API_KEY`     | `abc123...`                  | Chave de acesso à Currents API             |
+| `DEFAULT_CATEGORY_UUID`| *(opcional)*                 | UUID fixo de categoria para as notícias    |
 
-> O arquivo `.env` é necessário para executar comandos locais que dependem dessas variáveis, como `db:migrate`, `db:seed` e `dev`.
+> O arquivo `.env` é necessário para executar comandos locais que dependem dessas variáveis.
 
 ---
 
@@ -104,6 +141,52 @@ Verifica se a API está ativa.
 }
 ```
 
+### Notícias
+
+| Método | Rota                     | Descrição                                        |
+| ------ | ------------------------ | ------------------------------------------------ |
+| `GET`  | `/api/news`              | Lista notícias com paginação e busca por texto   |
+| `GET`  | `/api/news/:id`          | Retorna uma notícia pelo ID                      |
+| `GET`  | `/api/news/:id/related`  | Retorna notícias relacionadas (mesma categoria)  |
+
+#### `GET /api/news`
+
+**Query params:**
+
+| Parâmetro | Tipo     | Padrão | Descrição                                          |
+| --------- | -------- | ------ | -------------------------------------------------- |
+| `query`   | `string` | —      | Texto para busca em título, resumo e conteúdo      |
+| `q`       | `string` | —      | Alias de `query`                                   |
+| `page`    | `number` | `1`    | Página (mínimo 1)                                  |
+| `limit`   | `number` | `10`   | Itens por página (máximo 100)                      |
+
+**Resposta `200 OK`:**
+
+```json
+{
+  "source": "database",
+  "type": "all",
+  "query": null,
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "totalItems": 120,
+    "totalPages": 12
+  },
+  "data": []
+}
+```
+
+> O campo `source` indica se a resposta veio do `cache` (Redis) ou do `database`.
+
+#### `GET /api/news/:id/related`
+
+**Query params:**
+
+| Parâmetro | Tipo     | Padrão | Descrição                          |
+| --------- | -------- | ------ | ---------------------------------- |
+| `limit`   | `number` | `4`    | Quantidade de notícias (máximo 50) |
+
 ### Usuários
 
 | Método | Rota         | Descrição         |
@@ -120,21 +203,11 @@ Verifica se a API está ativa.
 | `email` | `string` | E-mail válido e único |
 | `name`  | `string` | 1–120 caracteres      |
 
-Exemplo:
-
-```bash
-curl -X POST http://localhost:3000/api/users \
-  -H "Content-Type: application/json" \
-  -d '{"email":"user@example.com","name":"User"}'
-```
-
 ---
 
 ## ⚠️ Respostas de Erro
 
 ### `400 Bad Request`
-
-Dados enviados na requisição são inválidos.
 
 ```json
 {
@@ -145,8 +218,6 @@ Dados enviados na requisição são inválidos.
 
 ### `404 Not Found`
 
-A rota ou recurso solicitado não existe.
-
 ```json
 {
   "error": "Not found"
@@ -154,8 +225,6 @@ A rota ou recurso solicitado não existe.
 ```
 
 ### `500 Internal Server Error`
-
-Ocorreu um erro interno inesperado.
 
 ```json
 {
@@ -192,16 +261,25 @@ npm run db:studio
 ```text
 backend/
 ├── prisma/
-│   ├── migrations/     # Migrations do banco
-│   ├── schema.prisma  # Schema do Prisma
-│   └── seed.ts        # Dados iniciais
+│   ├── migrations/        # Migrations do banco
+│   └── schema.prisma      # Schema do Prisma
 │
 ├── src/
-│   ├── config/         # Configurações da aplicação
-│   ├── lib/            # Dependências compartilhadas
-│   ├── routes/         # Rotas da API
-│   ├── app.ts          # Configuração do Express
-│   └── server.ts       # Inicialização do servidor
+│   ├── config/            # Configurações e variáveis de ambiente
+│   ├── controllers/       # Lógica dos endpoints (newsController, userController)
+│   ├── lib/               # Instâncias compartilhadas (Prisma, Redis)
+│   ├── routes/            # Definição das rotas da API
+│   ├── services/
+│   │   └── newsIngestion/ # Pipeline de ingestão da Currents API
+│   │       ├── CurrentsApiClient.ts
+│   │       ├── NewsNormalizer.ts
+│   │       ├── NewsValidator.ts
+│   │       ├── NewsDeduplicator.ts
+│   │       ├── NewsRepository.ts
+│   │       └── NewsIngestionPipeline.ts
+│   ├── container.ts       # Injeção de dependências (prisma, cache)
+│   ├── app.ts             # Configuração do Express + agendador de ingestão
+│   └── server.ts          # Inicialização do servidor HTTP
 │
 ├── .env.example
 ├── package.json
@@ -216,15 +294,16 @@ backend/
 ### Organização
 
 * **`routes/`** → define os endpoints e recebe as requisições HTTP.
+* **`controllers/`** → contém a lógica de negócio de cada rota.
 * **`config/`** → concentra configurações e variáveis de ambiente.
 * **`lib/`** → concentra instâncias e dependências compartilhadas.
-* **`prisma/`** → contém schema, migrations e seed do banco.
-* **`app.ts`** → configura a aplicação Express.
+* **`services/newsIngestion/`** → pipeline de busca e persistência de notícias.
+* **`app.ts`** → configura o Express e agenda a ingestão automática.
 * **`server.ts`** → inicializa o servidor HTTP.
 
 ### Nomenclatura
 
-* Arquivos → `camelCase` quando representarem módulos simples.
+* Arquivos → `camelCase` quando representarem módulos simples; `PascalCase` para classes.
 * Rotas → nomes no plural para recursos (`users`, `news`).
 * Variáveis e funções → `camelCase`.
 * Tipos e interfaces → `PascalCase`.
