@@ -1,5 +1,5 @@
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
-import { PrismaClient, type Prisma } from "../../generated/prisma/client.js";
+import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+import { PrismaClient, type Prisma } from '../../generated/prisma/client.js';
 
 export interface PrismaServiceOptions {
     databaseUrl: string;
@@ -10,7 +10,7 @@ export interface PrismaServiceOptions {
 export class PrismaService extends PrismaClient {
     constructor(config: string | PrismaServiceOptions) {
         const options: PrismaServiceOptions =
-            typeof config === "string" ? { databaseUrl: config } : config;
+            typeof config === 'string' ? { databaseUrl: config } : config;
 
         const adapter = new PrismaBetterSqlite3({
             url: options.databaseUrl,
@@ -23,4 +23,3 @@ export class PrismaService extends PrismaClient {
         });
     }
 }
-

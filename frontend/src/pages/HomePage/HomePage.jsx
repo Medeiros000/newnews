@@ -1,4 +1,3 @@
-
 import { useNavigate } from 'react-router-dom';
 import { Navbar } from '@/components/Navbar';
 import { Sidebar, SidebarOffcanvas } from '@/components/Sidebar';
@@ -39,7 +38,6 @@ export function HomePage() {
   const toggleArticleBookmark = useBookmarksStore(
     (state) => state.toggleArticleBookmark,
   );
-
 
   const {
     gridArticles,

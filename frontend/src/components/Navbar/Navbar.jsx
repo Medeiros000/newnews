@@ -235,12 +235,16 @@ export function Navbar({ onToggleMobileSidebar }) {
                       Últimas Notificações
                     </span>
                     <span className="badge text-bg-primary rounded-pill">
-                      {unreadCount} nova{unreadCount !== 1 ? 's' : ''}
+                      {unreadCount} nova
+                      {unreadCount !== 1 ? 's' : ''}
                     </span>
                   </div>
                   <div
                     className="list-group list-group-flush"
-                    style={{ maxHeight: 280, overflowY: 'auto' }}
+                    style={{
+                      maxHeight: 280,
+                      overflowY: 'auto',
+                    }}
                   >
                     {notifications.length === 0 ? (
                       <div className="p-3 text-center text-muted small">
@@ -255,13 +259,17 @@ export function Navbar({ onToggleMobileSidebar }) {
                           <div className="d-flex align-items-center justify-content-between mb-1">
                             <span
                               className="badge bg-primary-subtle text-primary border border-primary-subtle"
-                              style={{ fontSize: '0.65rem' }}
+                              style={{
+                                fontSize: '0.65rem',
+                              }}
                             >
                               {notif.category}
                             </span>
                             <small
                               className="text-muted"
-                              style={{ fontSize: '0.75rem' }}
+                              style={{
+                                fontSize: '0.75rem',
+                              }}
                             >
                               {notif.timeAgo}
                             </small>
@@ -294,7 +302,11 @@ export function Navbar({ onToggleMobileSidebar }) {
               >
                 <div
                   className="rounded-circle bg-secondary-subtle text-emphasis-secondary d-flex align-items-center justify-content-center fw-semibold fs-6 shadow-sm"
-                  style={{ width: 38, height: 38, flexShrink: 0 }}
+                  style={{
+                    width: 38,
+                    height: 38,
+                    flexShrink: 0,
+                  }}
                 >
                   {user?.avatarInitial || 'U'}
                 </div>

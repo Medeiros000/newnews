@@ -237,7 +237,10 @@ export function ConfigPage() {
             <span
               id="configSidebarOffcanvasLabel"
               className="fw-bold text-white"
-              style={{ fontSize: '0.95rem', letterSpacing: '-0.3px' }}
+              style={{
+                fontSize: '0.95rem',
+                letterSpacing: '-0.3px',
+              }}
             >
               NEW <span className="text-primary">NEWS</span>
             </span>
@@ -334,7 +337,10 @@ export function ConfigPage() {
           <section
             id="profile"
             className="rounded-3 p-4 mb-4 border text-body shadow-sm"
-            style={{ order: -1, backgroundColor: 'var(--bs-card-bg)' }}
+            style={{
+              order: -1,
+              backgroundColor: 'var(--bs-card-bg)',
+            }}
           >
             <div className="d-flex align-items-center gap-3">
               <div
@@ -366,7 +372,9 @@ export function ConfigPage() {
               >
                 <div
                   className="d-flex align-items-start gap-3 p-3 border-bottom"
-                  style={{ backgroundColor: 'var(--bs-card-bg)' }}
+                  style={{
+                    backgroundColor: 'var(--bs-card-bg)',
+                  }}
                 >
                   <IconUser size={19} className="text-primary" />
                   <div>
@@ -427,7 +435,9 @@ export function ConfigPage() {
               >
                 <div
                   className="d-flex align-items-start gap-3 p-3 border-bottom"
-                  style={{ backgroundColor: 'var(--bs-card-bg)' }}
+                  style={{
+                    backgroundColor: 'var(--bs-card-bg)',
+                  }}
                 >
                   {isDarkMode ? (
                     <IconMoon size={19} className="text-primary" />
@@ -479,7 +489,9 @@ export function ConfigPage() {
               >
                 <div
                   className="d-flex align-items-start gap-3 p-3 border-bottom"
-                  style={{ backgroundColor: 'var(--bs-card-bg)' }}
+                  style={{
+                    backgroundColor: 'var(--bs-card-bg)',
+                  }}
                 >
                   <IconBell size={19} className="text-primary" />
                   <div>
@@ -540,7 +552,9 @@ export function ConfigPage() {
               >
                 <div
                   className="d-flex align-items-start gap-3 p-3 border-bottom"
-                  style={{ backgroundColor: 'var(--bs-card-bg)' }}
+                  style={{
+                    backgroundColor: 'var(--bs-card-bg)',
+                  }}
                 >
                   <IconBookmark size={19} className="text-primary" />
                   <div>
@@ -590,7 +604,9 @@ export function ConfigPage() {
               >
                 <div
                   className="d-flex align-items-start gap-3 p-3 border-bottom"
-                  style={{ backgroundColor: 'var(--bs-card-bg)' }}
+                  style={{
+                    backgroundColor: 'var(--bs-card-bg)',
+                  }}
                 >
                   <IconBookmark size={19} className="text-primary" />
                   <div>
@@ -648,7 +664,9 @@ export function ConfigPage() {
               >
                 <div
                   className="d-flex align-items-start gap-3 p-3 border-bottom"
-                  style={{ backgroundColor: 'var(--bs-card-bg)' }}
+                  style={{
+                    backgroundColor: 'var(--bs-card-bg)',
+                  }}
                 >
                   <IconLock size={19} className="text-primary" />
                   <div>

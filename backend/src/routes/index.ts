@@ -1,9 +1,9 @@
-import { Router } from "express";
+import { Router } from 'express';
 
 const indexRouter = Router();
 
-indexRouter.get("/", (_req, res) => {
-	res.type("html").send(htmlContent);
+indexRouter.get('/', (_req, res) => {
+    res.type('html').send(htmlContent);
 });
 
 const htmlContent = `<!DOCTYPE html>

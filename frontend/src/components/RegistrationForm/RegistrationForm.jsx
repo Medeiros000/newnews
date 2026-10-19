@@ -74,7 +74,10 @@ export function RegistrationForm({ onSubmit }) {
           </div>
         </div>
 
-        <form className="registration-form" onSubmit={handleSubmit(handleFormSubmit)}>
+        <form
+          className="registration-form"
+          onSubmit={handleSubmit(handleFormSubmit)}
+        >
           <a href="/" className="registration-back-home">
             <IconArrowLeft size={20} />
             <span>Voltar para a home</span>
@@ -124,7 +127,9 @@ export function RegistrationForm({ onSubmit }) {
               />
             </div>
 
-            {errors.email && <span className="error">{errors.email.message}</span>}
+            {errors.email && (
+              <span className="error">{errors.email.message}</span>
+            )}
           </div>
 
           {/* Password Input Field with Visibility Toggle */}
