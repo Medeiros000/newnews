@@ -1,24 +1,27 @@
-import type { Server } from "http";
-import { App } from "./app.js";
-import { env } from "./config/env.js";
+import type { Server } from 'http';
+import { App } from './app.js';
+import { env } from './config/env.js';
+import { prisma, cache } from './container.js';
 
-const app = new App();
+const app = new App(prisma, cache);
 
 const server: Server = app.listen(env.PORT, () => {
     console.log(`API server listening on http://localhost:${env.PORT}`);
 });
 
-const shutdown = (signal: "SIGINT" | "SIGTERM"): void => {
+const shutdown = (signal: 'SIGINT' | 'SIGTERM'): void => {
     console.log(`Received ${signal}, shutting down...`);
-    server.close((error?: Error) => {
+    app.stopIngestionScheduler();
+    server.close(async (error?: Error) => {
         if (error) {
-            console.error("Error while closing HTTP server:", error);
+            console.error('Error while closing HTTP server:', error);
             process.exit(1);
         }
-        console.log("HTTP server closed.");
+        await prisma.$disconnect();
+        console.log('HTTP server closed.');
         process.exit(0);
     });
 };
 
-process.once("SIGINT", () => shutdown("SIGINT"));
-process.once("SIGTERM", () => shutdown("SIGTERM"));
+process.once('SIGINT', () => shutdown('SIGINT'));
+process.once('SIGTERM', () => shutdown('SIGTERM'));

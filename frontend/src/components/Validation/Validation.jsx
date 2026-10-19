@@ -6,9 +6,7 @@ export const schemaLogin = z.object({
     .string()
     .min(1, 'O e-mail é obrigatório')
     .email('Digite um e-mail válido'),
-  senha: z
-    .string()
-    .min(1, 'A senha é obrigatória'),
+  senha: z.string().min(1, 'A senha é obrigatória'),
 });
 
 // Validação de Registro

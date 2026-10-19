@@ -1,0 +1,13 @@
+{
+    "$schema": "./node_modules/oxlint/configuration_schema.json",
+    "plugins": ["typescript", "import"],
+    "categories": {
+        "correctness": "warn"
+    },
+    "rules": {
+        "no-unused-vars": "warn",
+        "no-console": ["warn", { "allow": ["warn", "error"] }],
+        "typescript/no-explicit-any": "warn"
+    },
+    "ignorePatterns": ["dist", "generated", "node_modules"]
+}

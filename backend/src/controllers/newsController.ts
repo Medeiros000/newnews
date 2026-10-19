@@ -1,6 +1,6 @@
-import { NextFunction, Request, Response } from "express";
-import { z } from "zod";
-import { prisma, cache } from "../container.js";
+import { NextFunction, Request, Response } from 'express';
+import { z } from 'zod';
+import { prisma, cache } from '../container.js';
 
 const newsQuerySchema = z
     .object({
@@ -17,7 +17,7 @@ const newsQuerySchema = z
 // Schema para a rota de notícias relacionadas
 const relatedNewsSchema = z.object({
     params: z.object({
-        id: z.string().min(1, "O ID da notícia é obrigatório"),
+        id: z.string().min(1, 'O ID da notícia é obrigatório'),
     }),
     query: z.object({
         limit: z.coerce.number().int().min(1).max(50).default(4),
@@ -26,7 +26,7 @@ const relatedNewsSchema = z.object({
 
 // Define the type for the response payload
 type NewsListPayload = {
-    type: "search" | "all";
+    type: 'search' | 'all';
     query: string | null;
     pagination: {
         page: number;
@@ -37,16 +37,12 @@ type NewsListPayload = {
     data: Awaited<ReturnType<typeof prisma.news.findMany>>;
 };
 
-async function searchNews(
-    request: Request,
-    response: Response,
-    next: NextFunction
-) {
+async function searchNews(request: Request, response: Response, next: NextFunction) {
     const result = newsQuerySchema.safeParse(request.query);
 
     if (!result.success) {
         response.status(400).json({
-            error: "Invalid query parameters",
+            error: 'Invalid query parameters',
             issues: result.error.issues,
         });
         return;
@@ -55,22 +51,22 @@ async function searchNews(
     const { query, page, limit } = result.data;
     const where = query
         ? {
-            OR: [
-                { title: { contains: query } },
-                { summary: { contains: query } },
-                { content: { contains: query } },
-            ],
-        }
+              OR: [
+                  { title: { contains: query } },
+                  { summary: { contains: query } },
+                  { content: { contains: query } },
+              ],
+          }
         : undefined;
     const cacheKey = `news:list:${encodeURIComponent(
-        query?.toLowerCase() || "all"
+        query?.toLowerCase() || 'all',
     )}:page:${page}:limit:${limit}`;
 
     try {
         const cachedData = await cache.get<NewsListPayload>(cacheKey);
         if (cachedData) {
             return response.status(200).json({
-                source: "cache",
+                source: 'cache',
                 ...cachedData,
             });
         }
@@ -81,14 +77,14 @@ async function searchNews(
                 take: limit,
                 where,
                 orderBy: {
-                    published_at: "desc",
+                    published_at: 'desc',
                 },
             }),
             prisma.news.count({ where }),
         ]);
 
         const responsePayload: NewsListPayload = {
-            type: query ? "search" : "all",
+            type: query ? 'search' : 'all',
             query: query || null,
             pagination: {
                 page,
@@ -102,7 +98,7 @@ async function searchNews(
         await cache.set(cacheKey, responsePayload, 180);
 
         return response.status(200).json({
-            source: "database",
+            source: 'database',
             ...responsePayload,
         });
     } catch (error) {
@@ -110,14 +106,10 @@ async function searchNews(
     }
 }
 
-async function getNewsById(
-    request: Request,
-    response: Response,
-    next: NextFunction
-) {
+async function getNewsById(request: Request, response: Response, next: NextFunction) {
     const id = Array.isArray(request.params.id) ? request.params.id[0] : request.params.id;
     if (!id) {
-        response.status(400).json({ success: false, error: "ID inválido" });
+        response.status(400).json({ success: false, error: 'ID inválido' });
         return;
     }
 
@@ -127,7 +119,7 @@ async function getNewsById(
         // 1. Check cache (Article cache hit?)
         const cachedNews = await cache.get(cacheKey);
         if (cachedNews) {
-            response.setHeader("X-Cache", "HIT");
+            response.setHeader('X-Cache', 'HIT');
             response.json({ success: true, data: cachedNews });
             return;
         }
@@ -136,25 +128,21 @@ async function getNewsById(
         const news = await prisma.news.findUnique({ where: { id } });
 
         if (!news) {
-            response.status(404).json({ success: false, error: "Notícia não encontrada" });
+            response.status(404).json({ success: false, error: 'Notícia não encontrada' });
             return;
         }
 
         // 3. Save to cache with a 5-minute TTL (300s)
         await cache.set(cacheKey, news, 300);
 
-        response.setHeader("X-Cache", "MISS");
+        response.setHeader('X-Cache', 'MISS');
         response.json({ success: true, data: news });
     } catch (error) {
         next(error);
     }
 }
 
-async function getRelatedNews(
-    request: Request,
-    response: Response,
-    next: NextFunction
-) {
+async function getRelatedNews(request: Request, response: Response, next: NextFunction) {
     const result = relatedNewsSchema.safeParse({
         params: request.params,
         query: request.query,
@@ -162,7 +150,7 @@ async function getRelatedNews(
 
     if (!result.success) {
         response.status(400).json({
-            error: "Invalid parameters",
+            error: 'Invalid parameters',
             issues: result.error.issues,
         });
         return;
@@ -177,7 +165,7 @@ async function getRelatedNews(
         // 1. Tenta recuperar do Cache Redis
         const cachedData = await getCache<any>(cacheKey);
         if (cachedData) {
-            response.setHeader("X-Cache", "HIT");
+            response.setHeader('X-Cache', 'HIT');
             return response.status(200).json({
                 success: true,
                 data: {
@@ -195,7 +183,7 @@ async function getRelatedNews(
         if (!currentNews) {
             return response.status(404).json({
                 success: false,
-                error: "Notícia não encontrada",
+                error: 'Notícia não encontrada',
             });
         }
 
@@ -207,7 +195,7 @@ async function getRelatedNews(
             },
             take: limit,
             orderBy: {
-                published_at: "desc",
+                published_at: 'desc',
             },
             select: {
                 id: true,
@@ -221,7 +209,7 @@ async function getRelatedNews(
         // 4. Armazena no Redis (TTL de 5 minutos / 300s)
         await setCache(cacheKey, relatedNews, 300);
 
-        response.setHeader("X-Cache", "MISS");
+        response.setHeader('X-Cache', 'MISS');
         return response.status(200).json({
             success: true,
             data: {

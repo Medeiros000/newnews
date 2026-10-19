@@ -1,4 +1,4 @@
-import { Redis, type RedisOptions } from "ioredis";
+import { Redis, type RedisOptions } from 'ioredis';
 
 export class RedisService {
     private readonly client: Redis;
@@ -11,7 +11,7 @@ export class RedisService {
             ...options,
         });
 
-        this.client.on("error", (_error: Error) => {
+        this.client.on('error', (_error: Error) => {
             // Suppress unhandled errors so process won't crash if Redis is unavailable
         });
     }
@@ -28,7 +28,37 @@ export class RedisService {
 
     public async set(key: string, value: unknown, ttlSeconds: number = 300): Promise<void> {
         try {
-            await this.client.set(key, JSON.stringify(value), "EX", ttlSeconds);
+            await this.client.set(key, JSON.stringify(value), 'EX', ttlSeconds);
+        } catch {
+            // Cache failures are non-blocking
+        }
+    }
+
+    public async del(key: string | string[]): Promise<void> {
+        try {
+            const keys = Array.isArray(key) ? key : [key];
+            if (keys.length > 0) {
+                await this.client.del(...keys);
+            }
+        } catch {
+            // Cache failures are non-blocking
+        }
+    }
+
+    public async delByPattern(pattern: string): Promise<void> {
+        try {
+            const keys = await this.client.keys(pattern);
+            if (keys.length > 0) {
+                await this.client.del(...keys);
+            }
+        } catch {
+            // Cache failures are non-blocking
+        }
+    }
+
+    public async disconnect(): Promise<void> {
+        try {
+            await this.client.quit();
         } catch {
             // Cache failures are non-blocking
         }
