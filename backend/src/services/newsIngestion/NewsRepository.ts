@@ -1,9 +1,15 @@
-import { prisma } from '../../lib/prisma.js';
+import { PrismaService } from '../../lib/prisma.js';
+import { RedisService } from '../../lib/redis.js';
 import { NormalizedNews } from './NewsNormalizer.js';
 
 export class NewsRepository {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cache?: RedisService
+  ) {}
+
   async save(newsItem: NormalizedNews) {
-    return await prisma.news.create({
+    const saved = await this.prisma.news.create({
       data: {
         category_id: newsItem.category_id,
         badge_bg: newsItem.badge_bg,
@@ -16,5 +22,11 @@ export class NewsRepository {
         source: newsItem.source,
       },
     });
+
+    if (this.cache) {
+      await this.cache.set(`news:${saved.id}`, saved, 300);
+    }
+
+    return saved;
   }
 }
