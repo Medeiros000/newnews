@@ -24,14 +24,17 @@ services:
       - /app/node_modules
     environment:
       - DATABASE_URL=file:./dev.db
-      - REDIS_URL=redis://redis:6379
+      # - REDIS_URL=redis://redis:6379
+      - REDIS_URL=redis://host.docker.internal:6379
       - PORT=3000
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - redis
     restart: unless-stopped
 
   redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
     ports:
       - "6379:6379"
     restart: unless-stopped
