@@ -17,7 +17,7 @@ export interface CurrentsArticle {
 
 export class CurrentsApiClient {
     private apiKey: string;
-    private baseUrl = 'https://api.currentsapi.services/v1/latest-news';
+    private baseUrl = 'https://api.currentsapi.services/v2/latest-news';
 
     constructor() {
         this.apiKey = env.CURRENTS_API_KEY || '';
