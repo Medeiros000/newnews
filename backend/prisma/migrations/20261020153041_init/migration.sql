@@ -8,6 +8,13 @@ CREATE TABLE "User" (
 );
 
 -- CreateTable
+CREATE TABLE "categories" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "label" TEXT NOT NULL,
+    "icon" TEXT NOT NULL
+);
+
+-- CreateTable
 CREATE TABLE "news" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "category_id" TEXT NOT NULL,
@@ -18,7 +25,8 @@ CREATE TABLE "news" (
     "image_url" TEXT NOT NULL,
     "published_at" DATETIME NOT NULL,
     "author" TEXT NOT NULL,
-    "source" TEXT NOT NULL
+    "source" TEXT NOT NULL,
+    CONSTRAINT "news_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "categories" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
 -- CreateIndex

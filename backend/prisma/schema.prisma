@@ -1,34 +1,43 @@
 generator client {
-	provider = "prisma-client"
-	output   = "../generated/prisma"
+    provider = "prisma-client"
+    output   = "../generated/prisma"
 }
 
 datasource db {
-	provider = "sqlite"
+    provider = "sqlite"
 }
 
 model User {
-	id        Int      @id @default(autoincrement())
-	email     String   @unique
-	name      String
-	createdAt DateTime @default(now())
-	updatedAt DateTime @updatedAt
+    id        Int      @id @default(autoincrement())
+    email     String   @unique
+    name      String
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+model Category {
+    id    String @id @default(uuid())
+    label String
+    icon  String
+
+    news News[]
+
+    @@map("categories")
 }
 
 model News {
-	id           String   @id @default(uuid())
-	category_id  String
-	badge_bg     String
-	title        String
-	summary      String
-	content      String
-	image_url    String
-	published_at DateTime
-	author       String
-	source       String
+    id           String   @id @default(uuid())
+    category_id  String
+    badge_bg     String
+    title        String
+    summary      String
+    content      String
+    image_url    String
+    published_at DateTime
+    author       String
+    source       String
 
-	// Uncomment when Category model/table is created:
-	// category    Category @relation(fields: [category_id], references: [id])
+    category Category @relation(fields: [category_id], references: [id])
 
-	@@map("news")
+    @@map("news")
 }

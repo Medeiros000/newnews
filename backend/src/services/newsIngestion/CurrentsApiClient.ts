@@ -28,7 +28,7 @@ export class CurrentsApiClient {
     async fetchLatestNews(): Promise<CurrentsArticle[]> {
         try {
             const url = `${this.baseUrl}?language=pt&apiKey=${this.apiKey}`;
-
+            console.log(`🔗 Requisição para Currents API: ${url}`);
             const response = await fetch(url, {
                 signal: AbortSignal.timeout(8000),
             });
