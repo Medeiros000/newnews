@@ -12,6 +12,7 @@ export interface CurrentsArticle {
     author?: string;
     domain?: string;
     language?: string;
+    category?: string[];
 }
 
 export class CurrentsApiClient {

@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import { CurrentsApiClient } from './CurrentsApiClient.js';
 import { NewsNormalizer } from './NewsNormalizer.js';
 import { NewsValidator } from './NewsValidator.js';
@@ -25,9 +24,25 @@ export class NewsIngestionPipeline {
         this.validator = new NewsValidator();
     }
 
+    private resolveCategoryId(
+        categoryName: string | undefined,
+        categories: Array<{ id: string; name: string }>,
+    ): string | undefined {
+        if (!categoryName) return undefined;
+
+        const normalizedCategoryName = categoryName.toLowerCase();
+        const exactCategory = categories.find(
+            (category) => category.name.toLowerCase() === normalizedCategoryName,
+        );
+        if (exactCategory) return exactCategory.id;
+
+        const relatedCategory = categories.find((category) =>
+            category.name.toLowerCase().split('_').includes(normalizedCategoryName),
+        );
+        return relatedCategory?.id;
+    }
+
     async execute() {
-        const categoryId = process.env.DEFAULT_CATEGORY_UUID || randomUUID();
-        console.log(`Usando category_id: ${categoryId}`);
         console.log('🔄 Iniciando ingestão de notícias (POO)...');
 
         const rawArticles = await this.apiClient.fetchLatestNews();
@@ -36,9 +51,29 @@ export class NewsIngestionPipeline {
             return;
         }
 
+        const categories = await this.prisma.category.findMany({
+            select: { id: true, name: true },
+        });
+        const generalCategoryId = categories.find((category) => category.name === 'general')?.id;
+        if (!generalCategoryId) {
+            throw new Error('Categoria padrão "general" não encontrada no banco de dados.');
+        }
+
         // Processa todos os artigos retornados pela API (sem slice arbitrário)
         const processedItems = [];
         for (const raw of rawArticles) {
+            const categoryName = raw.category?.[0]?.trim();
+            const categoryId = categoryName
+                ? this.resolveCategoryId(categoryName, categories)
+                : generalCategoryId;
+
+            if (!categoryId) {
+                console.warn(
+                    `⚠️ Categoria não encontrada para "${raw.title || 'Notícia sem título'}": ${categoryName || 'não informada'}`,
+                );
+                continue;
+            }
+
             const normalized = this.normalizer.normalize(raw, categoryId);
             const validated = this.validator.validate(normalized);
             if (validated) {

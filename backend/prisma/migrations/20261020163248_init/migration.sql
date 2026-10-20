@@ -32,3 +32,6 @@ CREATE TABLE "news" (
 
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "categories_name_key" ON "categories"("name");
