@@ -10,6 +10,7 @@ CREATE TABLE "User" (
 -- CreateTable
 CREATE TABLE "categories" (
     "id" TEXT NOT NULL PRIMARY KEY,
+    "name" TEXT NOT NULL,
     "label" TEXT NOT NULL,
     "icon" TEXT NOT NULL
 );
