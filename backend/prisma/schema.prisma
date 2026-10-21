@@ -21,9 +21,9 @@ model Category {
     label String
     icon  String
 
-    news News[]
+    // news News[]
 
-    // @@map("categories")
+    @@map("categories")
 }
 
 model News {
@@ -38,7 +38,7 @@ model News {
     author       String
     source       String
 
-    category Category @relation(fields: [category_id], references: [id])
+    // category Category @relation(fields: [category_id], references: [id])
 
-    // @@map("news")
+    @@map("news")
 }

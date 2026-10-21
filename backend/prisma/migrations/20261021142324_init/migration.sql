@@ -8,7 +8,7 @@ CREATE TABLE "User" (
 );
 
 -- CreateTable
-CREATE TABLE "Category" (
+CREATE TABLE "categories" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "name" TEXT NOT NULL,
     "label" TEXT NOT NULL,
@@ -16,7 +16,7 @@ CREATE TABLE "Category" (
 );
 
 -- CreateTable
-CREATE TABLE "News" (
+CREATE TABLE "news" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "category_id" TEXT NOT NULL,
     "badge_bg" TEXT NOT NULL,
@@ -26,12 +26,11 @@ CREATE TABLE "News" (
     "image_url" TEXT NOT NULL,
     "published_at" DATETIME NOT NULL,
     "author" TEXT NOT NULL,
-    "source" TEXT NOT NULL,
-    CONSTRAINT "News_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "Category" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    "source" TEXT NOT NULL
 );
 
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Category_name_key" ON "Category"("name");
+CREATE UNIQUE INDEX "categories_name_key" ON "categories"("name");

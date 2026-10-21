@@ -1,12 +1,8 @@
-import type { Category } from '../models/Category.js';
+import { Category } from '../models/Category.js';
 import type { Category as PrismaCategory } from '../../generated/prisma/client.js';
 
-class CategoryMapper {
+export class CategoryMapper {
 	static fromPrisma(category: PrismaCategory): Category {
-		return {
-			id: category.id,
-			label: category.label,
-			icon: category.icon,
-		};
+		return new Category(category.id, category.icon, category.label);
 	}
 }

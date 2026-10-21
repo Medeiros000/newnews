@@ -102,11 +102,6 @@ const categories = [
         name: 'culture_leisure',
         icon: 'U+1F3A8',
     },
-    {
-        label: 'Programação',
-        name: 'programming',
-        icon: 'U+1F4BB',
-    },
 ];
 
 try {
