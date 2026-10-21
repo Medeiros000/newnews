@@ -23,7 +23,7 @@ model Category {
 
     news News[]
 
-    @@map("categories")
+    // @@map("categories")
 }
 
 model News {
@@ -40,5 +40,5 @@ model News {
 
     category Category @relation(fields: [category_id], references: [id])
 
-    @@map("news")
+    // @@map("news")
 }
