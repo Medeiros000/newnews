@@ -6,15 +6,14 @@ import express, {
     type ErrorRequestHandler,
 } from 'express';
 import type { Server } from 'http';
-import { ZodError } from 'zod';
-import indexRouter from './routes/index.js';
-import { healthRouter } from './routes/health.js';
-import { usersRouter } from './routes/users.js';
-import { newsRouter } from './routes/news.js';
-import { PrismaService } from './lib/prisma.js';
-import { RedisService } from './lib/redis.js';
+import { indexRouter } from './routes/index.js';
+import { HealthRouter } from './routes/HealthRouter.js';
+import { UserRouter } from './routes/UserRouter.js';
+import { NewsRouter } from './routes/NewsRouter.js';
+import { PrismaService } from './services/PrismaServce.js';
+import { RedisService } from './services/RedisService.js';
 import { NewsIngestionPipeline } from './services/newsIngestion/NewsIngestionPipeline.js';
-import CategoryRouter from './routes/CategoryRouter.js';
+import { CategoryRouter } from './routes/CategoryRouter.js';
 
 const INGESTION_INTERVAL_MS = 60 * 60 * 1000; // 1 hora
 
@@ -25,10 +24,10 @@ export class App {
 
     constructor(
         private readonly prisma: PrismaService,
-        private readonly cache?: RedisService,
+        private readonly redis: RedisService,
     ) {
         this.instance = express();
-        this.pipeline = new NewsIngestionPipeline(prisma, cache);
+        this.pipeline = new NewsIngestionPipeline(prisma, redis);
         this.setupMiddlewares();
         this.setupRoutes();
         this.setupErrorHandling();
@@ -41,10 +40,15 @@ export class App {
 
     private setupRoutes(): void {
         this.instance.use('/', indexRouter);
-        this.instance.use('/api/categories', new CategoryRouter().router);
-        this.instance.use('/api/users', usersRouter);
-        this.instance.use('/api/health', healthRouter);
-        this.instance.use('/api/news', newsRouter);
+        const categoryRouter = new CategoryRouter(this.prisma, this.redis);
+        const userRouter = new UserRouter(this.prisma);
+        const newsRouter = new NewsRouter(this.prisma, this.redis);
+        const healthRouter = new HealthRouter();
+
+        this.instance.use('/api/categories', categoryRouter.router);
+        this.instance.use('/api/users', userRouter.router);
+        this.instance.use('/api/health', healthRouter.router);
+        this.instance.use('/api/news', newsRouter.router);
     }
 
     private setupErrorHandling(): void {
@@ -58,13 +62,8 @@ export class App {
             response: Response,
             _next: NextFunction,
         ): void => {
-            if (error instanceof ZodError) {
-                response.status(400).json({
-                    error: 'Invalid request',
-                    issues: error.issues,
-                });
-                return;
-            }
+            console.error(error);
+
 
             console.error(error);
             response.status(500).json({ error: 'Internal server error' });

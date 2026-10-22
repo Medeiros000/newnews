@@ -1,12 +1,14 @@
 import { Router } from 'express';
-import CategoryController from '../controllers/CategoryController.js';
+import { CategoryController } from '../controllers/CategoryController.js';
+import { PrismaService } from '../services/PrismaServce.js';
+import { RedisService } from '../services/RedisService.js';
 
-export default class CategoryRouter {
+export class CategoryRouter {
 	public readonly router: Router;
 	private readonly controller: CategoryController;
 
-	public constructor(controller = new CategoryController()) {
-		this.controller = controller;
+	public constructor(prisma: PrismaService, redis: RedisService) {
+		this.controller = new CategoryController(prisma, redis);
 		this.router = Router();
 		this.configureRoutes();
 	}

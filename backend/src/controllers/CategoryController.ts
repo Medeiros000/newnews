@@ -1,13 +1,19 @@
 import { Request, Response } from 'express';
-import { cache, prisma } from '../container.js';
+import { PrismaService } from '../services/PrismaServce.js';
 import { CategoryMapper } from '../mappers/CategoryMapper.js';
 import type { Category } from '../models/Category.js';
+import { RedisService } from '../services/RedisService.js';
 
-export default class CategoryController {
+export class CategoryController {
+	public constructor(
+		private readonly prisma: PrismaService,
+		private readonly redis: RedisService,
+	) {}
+
 	public async get(_request: Request, response: Response): Promise<Response> {
 		try {
 			const cacheKey = 'categories:list';
-			const cachedCategories = await cache.get<Category[]>(cacheKey);
+			const cachedCategories = await this.redis.get<Category[]>(cacheKey);
 
 			if (cachedCategories) {
 				return response.status(200).json(
@@ -18,10 +24,10 @@ export default class CategoryController {
 					});
 			}
 
-			const categories = (await prisma.category.findMany()).map(
+			const categories = (await this.prisma.category.findMany()).map(
 				CategoryMapper.fromPrisma,
 			);
-			await cache.set(cacheKey, categories, 300);
+			await this.redis.set(cacheKey, categories, 300);
 
 			return response.status(200).json({
 				success: true,
@@ -39,7 +45,7 @@ export default class CategoryController {
 	): Promise<Response> {
 		try {
 			const cacheKey = `categories:${request.params.id}`;
-			const cachedCategory = await cache.get<Category>(cacheKey);
+			const cachedCategory = await this.redis.get<Category>(cacheKey);
 
 			if (cachedCategory) {
 				return response.status(200).json(
@@ -50,7 +56,7 @@ export default class CategoryController {
 					});
 			}
 
-			const category = await prisma.category.findUnique({
+			const category = await this.prisma.category.findUnique({
 				where: { id: request.params.id },
 			});
 
@@ -59,7 +65,7 @@ export default class CategoryController {
 			}
 
 			const mappedCategory = CategoryMapper.fromPrisma(category);
-			await cache.set(cacheKey, mappedCategory, 300);
+			await this.redis.set(cacheKey, mappedCategory, 300);
 
 			return response.status(200).json({
 				success: true,

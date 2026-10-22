@@ -4,8 +4,8 @@ import { NewsNormalizer } from './NewsNormalizer.js';
 import { NewsValidator } from './NewsValidator.js';
 import { NewsDeduplicator } from './NewsDeduplicator.js';
 import { NewsRepository } from './NewsRepository.js';
-import { PrismaService } from '../../lib/prisma.js';
-import { RedisService } from '../../lib/redis.js';
+import { PrismaService } from '../PrismaServce.js';
+import { RedisService } from '../RedisService.js';
 
 export class NewsIngestionPipeline {
     private readonly deduplicator: NewsDeduplicator;

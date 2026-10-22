@@ -18,6 +18,8 @@ const users = [
     {
         email: 'test@newnews.com',
         name: 'Test News',
+        password: 'password123',
+        avatar: 'https://example.com/avatar1.png',
     },
 ];
 

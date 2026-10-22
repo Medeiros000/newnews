@@ -1,11 +1,11 @@
-import { PrismaService } from '../../lib/prisma.js';
-import { RedisService } from '../../lib/redis.js';
+import { PrismaService } from '../PrismaServce.js';
+import { RedisService } from '../RedisService.js';
 import { NormalizedNews } from './NewsNormalizer.js';
 
 export class NewsRepository {
     constructor(
         private readonly prisma: PrismaService,
-        private readonly cache?: RedisService,
+        private readonly redis?: RedisService,
     ) {}
 
     async save(newsItem: NormalizedNews) {
@@ -23,8 +23,8 @@ export class NewsRepository {
             },
         });
 
-        if (this.cache) {
-            await this.cache.set(`news:${saved.id}`, saved, 300);
+        if (this.redis) {
+            await this.redis.set(`news:${saved.id}`, saved, 300);
         }
 
         return saved;
