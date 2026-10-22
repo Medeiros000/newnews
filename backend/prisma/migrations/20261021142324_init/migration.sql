@@ -8,6 +8,14 @@ CREATE TABLE "User" (
 );
 
 -- CreateTable
+CREATE TABLE "categories" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "name" TEXT NOT NULL,
+    "label" TEXT NOT NULL,
+    "icon" TEXT NOT NULL
+);
+
+-- CreateTable
 CREATE TABLE "news" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "category_id" TEXT NOT NULL,
@@ -23,3 +31,6 @@ CREATE TABLE "news" (
 
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "categories_name_key" ON "categories"("name");

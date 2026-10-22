@@ -11,8 +11,8 @@
     "format": "prettier --write src",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
-    "db:studio": "prisma studio",
-    "news:ingest": "tsx src/services/newsIngestion/run.ts"
+    "db:seed": "prisma db seed",
+    "db:studio": "prisma studio"
   },
   "dependencies": {
     "@prisma/adapter-better-sqlite3": "^7.10.0",
