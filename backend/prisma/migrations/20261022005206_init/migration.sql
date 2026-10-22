@@ -5,8 +5,8 @@ CREATE TABLE "users" (
     "email" TEXT NOT NULL,
     "password" TEXT NOT NULL,
     "avatar" TEXT NOT NULL,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" DATETIME NOT NULL
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL
 );
 
 -- CreateTable
@@ -26,7 +26,7 @@ CREATE TABLE "news" (
     "summary" TEXT NOT NULL,
     "content" TEXT NOT NULL,
     "image_url" TEXT NOT NULL,
-    "published_at" DATETIME NOT NULL,
+    "published_at" TIMESTAMP(3) NOT NULL,
     "author" TEXT NOT NULL,
     "source" TEXT NOT NULL,
     CONSTRAINT "news_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "categories" ("id") ON DELETE RESTRICT ON UPDATE CASCADE

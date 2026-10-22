@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../generated/prisma/client.js';
 
 const databaseUrl = process.env.DATABASE_URL;
@@ -8,9 +8,8 @@ if (!databaseUrl) {
     throw new Error('DATABASE_URL is required to run the seed');
 }
 
-const adapter = new PrismaBetterSqlite3({
-    url: databaseUrl,
-    timeout: 10_000,
+const adapter = new PrismaPg({
+    connectionString: databaseUrl,
 });
 const prisma = new PrismaClient({ adapter });
 
