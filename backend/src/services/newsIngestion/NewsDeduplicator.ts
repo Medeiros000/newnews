@@ -1,10 +1,12 @@
-import { PrismaService } from '../PrismaServce.js';
+import { PrismaService } from '../PrismaService.js';
 import { NormalizedNews } from './NewsNormalizer.js';
 
 export class NewsDeduplicator {
-    constructor(private readonly prisma: PrismaService) {}
+    public constructor(
+        private readonly prisma: PrismaService = PrismaService.getInstance(),
+    ) {}
 
-    async filterDuplicates(items: NormalizedNews[]): Promise<NormalizedNews[]> {
+    public async filterDuplicates(items: NormalizedNews[]): Promise<NormalizedNews[]> {
         if (items.length === 0) return [];
 
         const titles = items.map((i) => i.title);

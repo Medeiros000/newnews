@@ -1,10 +1,9 @@
-import { randomUUID } from 'node:crypto';
 import { CurrentsApiClient } from './CurrentsApiClient.js';
 import { NewsNormalizer } from './NewsNormalizer.js';
 import { NewsValidator } from './NewsValidator.js';
 import { NewsDeduplicator } from './NewsDeduplicator.js';
 import { NewsRepository } from './NewsRepository.js';
-import { PrismaService } from '../PrismaServce.js';
+import { PrismaService } from '../PrismaService.js';
 import { RedisService } from '../RedisService.js';
 
 export class NewsIngestionPipeline {
@@ -14,20 +13,18 @@ export class NewsIngestionPipeline {
     private readonly normalizer: NewsNormalizer;
     private readonly validator: NewsValidator;
 
-    constructor(
-        private readonly prisma: PrismaService,
-        private readonly cache?: RedisService,
+    public constructor(
+        private readonly prisma: PrismaService = PrismaService.getInstance(),
+        private readonly cache: RedisService = RedisService.getInstance(),
     ) {
-        this.deduplicator = new NewsDeduplicator(prisma);
-        this.repository = new NewsRepository(prisma, cache);
+        this.deduplicator = new NewsDeduplicator(this.prisma);
+        this.repository = new NewsRepository(this.prisma, this.cache);
         this.apiClient = new CurrentsApiClient();
         this.normalizer = new NewsNormalizer();
         this.validator = new NewsValidator();
     }
 
-    async execute() {
-        const categoryId = process.env.DEFAULT_CATEGORY_UUID || randomUUID();
-        console.log(`Usando category_id: ${categoryId}`);
+    public async execute() {
         console.log('🔄 Iniciando ingestão de notícias (POO)...');
 
         const rawArticles = await this.apiClient.fetchLatestNews();
@@ -39,7 +36,7 @@ export class NewsIngestionPipeline {
         // Processa todos os artigos retornados pela API (sem slice arbitrário)
         const processedItems = [];
         for (const raw of rawArticles) {
-            const normalized = this.normalizer.normalize(raw, categoryId);
+            const normalized = this.normalizer.normalize(raw);
             const validated = this.validator.validate(normalized);
             if (validated) {
                 processedItems.push(validated);

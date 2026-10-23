@@ -12,20 +12,21 @@ export interface CurrentsArticle {
     author?: string;
     domain?: string;
     language?: string;
+    category?: string | string[];
 }
 
 export class CurrentsApiClient {
     private apiKey: string;
-    private baseUrl = 'https://api.currentsapi.services/v1/latest-news';
+    private baseUrl = 'https://api.currentsapi.services/v2/latest-news';
 
-    constructor() {
+    public constructor() {
         this.apiKey = env.CURRENTS_API_KEY || '';
         if (!this.apiKey) {
             console.warn('⚠️ AVISO: CURRENTS_API_KEY não está configurada no ambiente.');
         }
     }
 
-    async fetchLatestNews(): Promise<CurrentsArticle[]> {
+    public async fetchLatestNews(): Promise<CurrentsArticle[]> {
         try {
             const url = `${this.baseUrl}?language=pt&apiKey=${this.apiKey}`;
 

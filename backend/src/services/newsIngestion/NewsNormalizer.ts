@@ -1,7 +1,7 @@
 import { CurrentsArticle } from './CurrentsApiClient.js';
 
 export interface NormalizedNews {
-    category_id: string;
+    category?: string;
     badge_bg: string;
     title: string;
     summary: string;
@@ -26,7 +26,7 @@ export class NewsNormalizer {
         }
     }
 
-    normalize(raw: CurrentsArticle, category_id: string): NormalizedNews {
+    public normalize(raw: CurrentsArticle): NormalizedNews {
         // Título truncado a 255 chars
         const rawTitle = raw.title || 'Notícia sem título';
         const title = rawTitle.slice(0, 255);
@@ -51,9 +51,12 @@ export class NewsNormalizer {
 
         // Extrai o domínio real da URL em vez de usar o campo "language" como fallback
         const source = this.extractDomain(raw.url);
+        const category = Array.isArray(raw.category)
+            ? raw.category.join(' ')
+            : raw.category;
 
         return {
-            category_id,
+            category,
             badge_bg: 'bg-blue-500',
             title,
             summary,

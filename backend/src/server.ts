@@ -1,11 +1,11 @@
 import type { Server } from 'http';
 import { App } from './app.js';
 import { env } from './config/env.js';
-import { PrismaService } from './services/PrismaServce.js';
+import { PrismaService } from './services/PrismaService.js';
 import { RedisService } from './services/RedisService.js';
 
-const prisma = new PrismaService(env.DATABASE_URL);
-const redis = new RedisService(env.REDIS_URL);
+const prisma = PrismaService.getInstance();
+const redis = RedisService.getInstance();
 
 const app = new App(prisma, redis);
 
