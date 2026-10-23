@@ -10,17 +10,16 @@ import { indexRouter } from './routes/index.js';
 import { HealthRouter } from './routes/HealthRouter.js';
 import { UserRouter } from './routes/UserRouter.js';
 import { NewsRouter } from './routes/NewsRouter.js';
-import { PrismaService } from './services/PrismaServce.js';
+import { PrismaService } from './services/PrismaService.js';
 import { RedisService } from './services/RedisService.js';
 import { NewsIngestionPipeline } from './services/newsIngestion/NewsIngestionPipeline.js';
 import { CategoryRouter } from './routes/CategoryRouter.js';
-import { Pagination } from './models/Pagination.js';
-
+import { Pagination } from './commands/Pagination.js';
 
 const INGESTION_INTERVAL_MS = 60 * 60 * 1000; // 1 hora
 
 export class App {
-    public pagination = new Pagination(1, 10, 100); 
+    public pagination = new Pagination(1, 10, 100);
     public readonly instance: Application;
     private readonly pipeline: NewsIngestionPipeline;
     private ingestionTimer?: ReturnType<typeof setInterval>;
@@ -44,9 +43,9 @@ export class App {
 
     private setupRoutes(): void {
         this.instance.use('/', indexRouter);
-        const categoryRouter = new CategoryRouter(this.prisma, this.redis);
-        const userRouter = new UserRouter(this.prisma);
-        const newsRouter = new NewsRouter(this.prisma, this.redis);
+        const categoryRouter = new CategoryRouter();
+        const userRouter = new UserRouter();
+        const newsRouter = new NewsRouter();
         const healthRouter = new HealthRouter();
 
         this.instance.use('/api/categories', categoryRouter.router);

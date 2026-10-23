@@ -3,7 +3,7 @@ import { Router } from 'express';
 export class HealthRouter {
     public readonly router: Router;
 
-    constructor() {
+    public constructor() {
         this.router = Router();
         this.setupRoutes();
     }

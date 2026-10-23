@@ -20,7 +20,7 @@ model User {
 }
 
 model Category {
-    id    String @id @default(uuid())
+    id    Int @id @default(autoincrement())
     name  String @unique
     label String
     icon  String
@@ -32,7 +32,7 @@ model Category {
 
 model News {
     id           String   @id @default(uuid())
-    category_id  String
+    category_id  Int
     badge_bg     String
     title        String
     summary      String

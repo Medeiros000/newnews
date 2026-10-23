@@ -1,15 +1,15 @@
 export class Category {
-	private id: string
+	private id: number
 	private name: string
 	private label: string
 	private icon: string
-	constructor(id: string, name: string, label: string, icon: string) {
+	constructor(id: number, name: string, label: string, icon: string) {
 		this.id = id
 		this.name = name
 		this.label = label
 		this.icon = icon
 	}
-	public getId(): string {
+	public getId(): number {
 		return this.id
 	}
 	public getName(): string {

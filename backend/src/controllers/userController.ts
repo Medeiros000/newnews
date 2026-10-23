@@ -1,27 +1,33 @@
-import { NextFunction, Request, Response } from 'express';
-import { PrismaService } from '../services/PrismaServce.js';
-import { UserMapper } from '../mappers/UserMapper.js';
+import type { NextFunction, Request, Response } from 'express';
+import { QueryOptions } from '../commands/QueryOptions.js';
+import { UserService } from '../services/UserService.js';
+import { IUserService } from '../services/interfaces/IUserService.js';
+import { IUserController } from './interfaces/IUserController.js';
 
-export class UserController {
-	constructor(private readonly prisma: PrismaService) {}
+export class UserController implements IUserController {
+	public constructor(
+		private readonly service: IUserService = new UserService(),
+	) {
+	}
 
 	public async getUser(request: Request, response: Response, next: NextFunction): Promise<void> {
-		
 		try {
-			const user = await this.prisma.user.findUnique({
-				where: { email: request.params.email as string },
-			});
+			const user = await this.service.getUser(
+				new QueryOptions({
+					email: Array.isArray(request.params.email)
+						? request.params.email[0]
+						: request.params.email,
+				}),
+			);
 
 			if (!user) {
 				response.status(404).json({ error: 'User not found' });
 				return;
 			}
 
-			const usersWithAvatar = UserMapper.fromPrisma(user);
-
 			response.json({
 				success: true,
-				data: usersWithAvatar
+				data: user,
 			});
 		} catch (error) {
 			next(error);

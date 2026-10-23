@@ -1,15 +1,14 @@
 import { Router } from 'express';
 import { NewsController } from '../controllers/NewsController.js';
-import { PrismaService } from '../services/PrismaServce.js';
-import { RedisService } from '../services/RedisService.js';
+import type { INewsController } from '../controllers/interfaces/INewsController.js';
 
 export class NewsRouter {
     public readonly router: Router;
-    private readonly controller: NewsController;
+    private readonly controller: INewsController;
 
-    constructor(prisma: PrismaService, redis: RedisService) {
+    public constructor(controller: INewsController = new NewsController()) {
         this.router = Router();
-        this.controller = new NewsController(prisma, redis);
+        this.controller = controller;
         this.setupRoutes();
     }
 
