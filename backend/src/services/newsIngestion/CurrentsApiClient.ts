@@ -12,15 +12,15 @@ export interface CurrentsArticle {
     author?: string;
     domain?: string;
     language?: string;
-    category?: string | string[];
 }
 
 export class CurrentsApiClient {
     private apiKey: string;
-    private baseUrl = 'https://api.currentsapi.services/v2/latest-news';
+    private baseUrl: string;
 
     public constructor() {
         this.apiKey = env.CURRENTS_API_KEY || '';
+        this.baseUrl = env.CURRENTS_API_BASE_URL || '';
         if (!this.apiKey) {
             console.warn('⚠️ AVISO: CURRENTS_API_KEY não está configurada no ambiente.');
         }
