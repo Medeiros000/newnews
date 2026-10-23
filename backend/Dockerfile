@@ -3,9 +3,7 @@ FROM node:24-alpine
 WORKDIR /app
 
 COPY package*.json ./
-RUN apk add --no-cache --virtual .build-deps python3 make g++ \
-	&& npm ci \
-	&& apk del .build-deps
+RUN npm ci
 
 COPY . .
 RUN npx prisma generate

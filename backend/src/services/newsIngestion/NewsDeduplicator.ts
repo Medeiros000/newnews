@@ -1,4 +1,4 @@
-import { PrismaService } from '../../lib/prisma.js';
+import { PrismaService } from '../PrismaServce.js';
 import { NormalizedNews } from './NewsNormalizer.js';
 
 export class NewsDeduplicator {

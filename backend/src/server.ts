@@ -1,9 +1,13 @@
 import type { Server } from 'http';
 import { App } from './app.js';
 import { env } from './config/env.js';
-import { prisma, cache } from './container.js';
+import { PrismaService } from './services/PrismaServce.js';
+import { RedisService } from './services/RedisService.js';
 
-const app = new App(prisma, cache);
+const prisma = new PrismaService(env.DATABASE_URL);
+const redis = new RedisService(env.REDIS_URL);
+
+const app = new App(prisma, redis);
 
 const server: Server = app.listen(env.PORT, () => {
     console.log(`API server listening on http://localhost:${env.PORT}`);
@@ -18,6 +22,7 @@ const shutdown = (signal: 'SIGINT' | 'SIGTERM'): void => {
             process.exit(1);
         }
         await prisma.$disconnect();
+        await redis.disconnect();
         console.log('HTTP server closed.');
         process.exit(0);
     });

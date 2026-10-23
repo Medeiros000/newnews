@@ -4,15 +4,19 @@ generator client {
 }
 
 datasource db {
-    provider = "sqlite"
+    provider = "postgresql"
 }
 
 model User {
-    id        Int      @id @default(autoincrement())
-    email     String   @unique
-    name      String
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+    id         String   @id @default(uuid())
+    name       String
+    email      String   @unique
+    password   String
+    avatar     String
+    created_at DateTime @default(now())
+    updated_at DateTime @updatedAt
+
+    @@map("users")
 }
 
 model Category {
@@ -21,7 +25,7 @@ model Category {
     label String
     icon  String
 
-    // news News[]
+    news News[]
 
     @@map("categories")
 }
@@ -38,7 +42,7 @@ model News {
     author       String
     source       String
 
-    // category Category @relation(fields: [category_id], references: [id])
+    category Category @relation(fields: [category_id], references: [id])
 
     @@map("news")
 }
