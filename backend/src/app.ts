@@ -14,10 +14,13 @@ import { PrismaService } from './services/PrismaServce.js';
 import { RedisService } from './services/RedisService.js';
 import { NewsIngestionPipeline } from './services/newsIngestion/NewsIngestionPipeline.js';
 import { CategoryRouter } from './routes/CategoryRouter.js';
+import { Pagination } from './models/Pagination.js';
+
 
 const INGESTION_INTERVAL_MS = 60 * 60 * 1000; // 1 hora
 
 export class App {
+    public pagination = new Pagination(1, 10, 100); 
     public readonly instance: Application;
     private readonly pipeline: NewsIngestionPipeline;
     private ingestionTimer?: ReturnType<typeof setInterval>;
@@ -32,6 +35,7 @@ export class App {
         this.setupRoutes();
         this.setupErrorHandling();
         this.startIngestionScheduler();
+        console.log(this.pagination.toJSON());
     }
 
     private setupMiddlewares(): void {

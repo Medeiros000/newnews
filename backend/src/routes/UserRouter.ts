@@ -7,10 +7,10 @@ export class UserRouter {
 
     constructor(prisma: PrismaService) {
         this.router = Router();
-        this.configureRoutes(new UserController(prisma));
+        this.setupRoutes(new UserController(prisma));
     }
 
-    public configureRoutes(controller: UserController): void {
+    public setupRoutes(controller: UserController): void {
         this.router.get('/:email', controller.getUser.bind(controller));
         this.router.post('/', controller.createUser.bind(controller));
     }

@@ -10,10 +10,10 @@ export class NewsRouter {
     constructor(prisma: PrismaService, redis: RedisService) {
         this.router = Router();
         this.controller = new NewsController(prisma, redis);
-        this.configureRoutes();
+        this.setupRoutes();
     }
 
-    private configureRoutes(): void {
+    private setupRoutes(): void {
         this.router.get('/', this.controller.getNews.bind(this.controller));
         this.router.get('/search', this.controller.searchNews.bind(this.controller));
         this.router.get('/:id', this.controller.getNewsById.bind(this.controller));

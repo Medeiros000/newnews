@@ -5,10 +5,10 @@ export class HealthRouter {
 
     constructor() {
         this.router = Router();
-        this.configureRoutes();
+        this.setupRoutes();
     }
 
-    private configureRoutes(): void {
+    private setupRoutes(): void {
         this.router.get('/', (_request, response) => {
             response.json({
                 status: 'ok',

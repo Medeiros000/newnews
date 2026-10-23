@@ -1,4 +1,4 @@
-import { User } from '../models/User.js';
+import { User } from '../models/entities/User.js';
 import type { User as PrismaUser } from '../../generated/prisma/client.js';
 
 export class UserMapper {

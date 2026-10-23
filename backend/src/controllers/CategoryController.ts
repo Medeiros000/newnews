@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { PrismaService } from '../services/PrismaServce.js';
 import { CategoryMapper } from '../mappers/CategoryMapper.js';
-import type { Category } from '../models/Category.js';
+import { Category } from '../models/entities/Category.js';
 import { RedisService } from '../services/RedisService.js';
 
 export class CategoryController {

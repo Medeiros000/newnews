@@ -10,10 +10,10 @@ export class CategoryRouter {
 	public constructor(prisma: PrismaService, redis: RedisService) {
 		this.controller = new CategoryController(prisma, redis);
 		this.router = Router();
-		this.configureRoutes();
+		this.setupRoutes();
 	}
 
-	private configureRoutes(): void {
+	private setupRoutes(): void {
 		this.router.get('/', this.controller.get.bind(this.controller));
 		this.router.get('/:id', this.controller.getById.bind(this.controller));
 	}
