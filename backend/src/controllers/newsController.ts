@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
-import { QueryOptions } from '../commands/QueryOptions.js';
+import type { CreateNewsDto } from '../dtos/CreateNewsDto.js';
+import { QueryOptions } from '../queries/QueryOptions.js';
 import { NewsService } from '../services/NewsService.js';
 import { INewsService } from '../services/interfaces/INewsService.js';
 import { INewsController } from './interfaces/INewsController.js';
@@ -19,10 +20,24 @@ export class NewsController implements INewsController {
                 this.createQueryOptions(request),
             );
             response.status(200).json({
-                source: result.fromCache ? 'cache' : 'database',
-                ...result.data,
+                success: true,
+                data: result,
             });
         } catch (error) {
+            next(error);
+        }
+    }
+
+    public async createNews(
+        request: Request,
+        response: Response,
+        next: NextFunction,
+    ): Promise<void> {
+        try {
+            const news = await this.service.createNews(request.body as CreateNewsDto);
+            response.status(201).json({ success: true, data: news });
+        }
+        catch (error) {
             next(error);
         }
     }
@@ -52,8 +67,31 @@ export class NewsController implements INewsController {
                 return;
             }
 
-            response.setHeader('X-Cache', result.fromCache ? 'HIT' : 'MISS');
-            response.json({ success: true, data: result.data });
+            response.json({ success: true, data: result });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    public async getNewsBySlug(
+        request: Request,
+        response: Response,
+        next: NextFunction,
+    ): Promise<void> {
+
+        try {
+            const result = await this.service.getNewsBySlug(
+                this.createQueryOptions(request),
+            );
+            if (!result) {
+                response.status(404).json({
+                    success: false,
+                    error: 'Notícia não encontrada',
+                });
+                return;
+            }
+
+            response.json({ success: true, data: result });
         } catch (error) {
             next(error);
         }
@@ -76,10 +114,9 @@ export class NewsController implements INewsController {
                 return;
             }
 
-            response.setHeader('X-Cache', result.fromCache ? 'HIT' : 'MISS');
             response.status(200).json({
                 success: true,
-                data: { news: result.data },
+                data: { news: result },
             });
         } catch (error) {
             next(error);
@@ -92,6 +129,12 @@ export class NewsController implements INewsController {
             : typeof request.query.q === 'string'
                 ? request.query.q
                 : undefined;
+        const slug = typeof request.params.slug === 'string'
+            ? request.params.slug
+            : undefined;
+        const category = typeof request.query.category === 'string'
+            ? request.query.category
+            : undefined;
         const page = this.parseNumber(request.query.page, 1);
         const limit = this.parseNumber(request.query.limit, 10);
 
@@ -102,6 +145,8 @@ export class NewsController implements INewsController {
             page,
             limit,
             query,
+            slug,
+            category,
         });
     }
 

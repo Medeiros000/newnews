@@ -2,7 +2,7 @@ import { PrismaService } from './PrismaService.js';
 import { RedisService } from './RedisService.js';
 import { CategoryMapper } from '../mappers/CategoryMapper.js';
 import { Category } from '../models/entities/Category.js';
-import { QueryOptions } from '../commands/QueryOptions.js';
+import { QueryOptions } from '../queries/QueryOptions.js';
 import { ICategoryService } from './interfaces/ICategoryService.js';
 
 export class CategoryService implements ICategoryService {

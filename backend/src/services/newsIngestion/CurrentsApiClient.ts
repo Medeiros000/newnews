@@ -17,10 +17,11 @@ export interface CurrentsArticle {
 
 export class CurrentsApiClient {
     private apiKey: string;
-    private baseUrl = 'https://api.currentsapi.services/v2/latest-news';
+    private baseUrl: string;
 
     public constructor() {
         this.apiKey = env.CURRENTS_API_KEY || '';
+        this.baseUrl = env.CURRENTS_API_BASE_URL || '';
         if (!this.apiKey) {
             console.warn('⚠️ AVISO: CURRENTS_API_KEY não está configurada no ambiente.');
         }
@@ -29,7 +30,7 @@ export class CurrentsApiClient {
     public async fetchLatestNews(): Promise<CurrentsArticle[]> {
         try {
             const url = `${this.baseUrl}?language=pt&apiKey=${this.apiKey}`;
-
+            console.log(`🔗 Requisição para Currents API: ${url}`);
             const response = await fetch(url, {
                 signal: AbortSignal.timeout(8000),
             });

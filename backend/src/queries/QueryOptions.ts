@@ -1,5 +1,6 @@
 export class QueryOptions {
   id?: string;
+  slug?: string;
   email?: string;
   page?: number;
   limit?: number;

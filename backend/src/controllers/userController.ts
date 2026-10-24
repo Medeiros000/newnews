@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from 'express';
-import { QueryOptions } from '../commands/QueryOptions.js';
+import { QueryOptions } from '../queries/QueryOptions.js';
 import { UserService } from '../services/UserService.js';
 import { IUserService } from '../services/interfaces/IUserService.js';
 import { IUserController } from './interfaces/IUserController.js';

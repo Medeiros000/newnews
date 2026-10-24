@@ -27,7 +27,7 @@ CREATE TABLE "news" (
     "category_id" INTEGER NOT NULL,
     "badge_bg" TEXT NOT NULL,
     "title" TEXT NOT NULL,
-    "summary" TEXT NOT NULL,
+    "slug" TEXT NOT NULL,
     "content" TEXT NOT NULL,
     "image_url" TEXT NOT NULL,
     "published_at" TIMESTAMP(3) NOT NULL,
@@ -42,6 +42,9 @@ CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "categories_name_key" ON "categories"("name");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "news_slug_key" ON "news"("slug");
 
 -- AddForeignKey
 ALTER TABLE "news" ADD CONSTRAINT "news_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "categories"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

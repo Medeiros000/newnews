@@ -15,10 +15,10 @@ export class NewsIngestionPipeline {
 
     public constructor(
         private readonly prisma: PrismaService = PrismaService.getInstance(),
-        private readonly cache: RedisService = RedisService.getInstance(),
+        private readonly redis: RedisService = RedisService.getInstance(),
     ) {
-        this.deduplicator = new NewsDeduplicator(this.prisma);
-        this.repository = new NewsRepository(this.prisma, this.cache);
+        this.deduplicator = new NewsDeduplicator();
+        this.repository = new NewsRepository();
         this.apiClient = new CurrentsApiClient();
         this.normalizer = new NewsNormalizer();
         this.validator = new NewsValidator();
@@ -59,8 +59,8 @@ export class NewsIngestionPipeline {
         }
 
         // Invalida cache de listagem caso novas notícias tenham sido adicionadas
-        if (savedCount > 0 && this.cache) {
-            await this.cache.delByPattern('news:list:*');
+        if (savedCount > 0 && this.redis) {
+            await this.redis.delByPattern('news:list:*');
             console.log('🧹 Cache de listagem de notícias invalidado com sucesso.');
         }
 

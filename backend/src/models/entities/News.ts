@@ -1,20 +1,22 @@
+import { slugify } from '../../utils/slugify.js';
+
 export class News {
     private id: string;
-    private category_id: string;
+    private category_id: number;
     private badge_bg: string;
     private title: string;
-    private summary: string;
+    private slug: string;
     private content: string;
     private image_url: string;
     private published_at: Date;
     private author: string;
     private source: string;
-    constructor(
+    public constructor(
         id: string,
-        category_id: string,
+        category_id: number,
         badge_bg: string,
         title: string,
-        summary: string,
+        slug: string,
         content: string,
         image_url: string,
         published_at: Date,
@@ -25,11 +27,41 @@ export class News {
         this.category_id = category_id;
         this.badge_bg = badge_bg;
         this.title = title;
-        this.summary = summary;
+        this.slug = slugify(title);
         this.content = content;
         this.image_url = image_url;
         this.published_at = published_at;
         this.author = author;
         this.source = source;
+    }
+    public getId(): string {
+        return this.id;
+    }
+    public getCategoryId(): number {
+        return this.category_id;
+    }
+    public getBadgeBg(): string {
+        return this.badge_bg;
+    }
+    public getTitle(): string {
+        return this.title;
+    }
+    public getSlug(): string {
+        return this.slug;
+    }
+    public getContent(): string {
+        return this.content;
+    }
+    public getImageUrl(): string {
+        return this.image_url;
+    }
+    public getPublishedAt(): Date {
+        return this.published_at;
+    }
+    public getAuthor(): string {
+        return this.author;
+    }
+    public getSource(): string {
+        return this.source;
     }
 }

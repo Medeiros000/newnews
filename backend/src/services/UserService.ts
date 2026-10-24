@@ -1,6 +1,6 @@
 import { UserMapper } from '../mappers/UserMapper.js';
 import { User } from '../models/entities/User.js';
-import { QueryOptions } from '../commands/QueryOptions.js';
+import { QueryOptions } from '../queries/QueryOptions.js';
 import { PrismaService } from './PrismaService.js';
 import { RedisService } from './RedisService.js';
 import { IUserService } from './interfaces/IUserService.js';

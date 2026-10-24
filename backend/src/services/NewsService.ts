@@ -1,131 +1,149 @@
-import type { Prisma } from '../../generated/prisma/client.js';
-import { QueryOptions } from '../commands/QueryOptions.js';
+import { QueryOptions } from '../queries/QueryOptions.js';
+import { CreateNewsDto } from '../dtos/CreateNewsDto.js';
 import { PrismaService } from './PrismaService.js';
 import { RedisService } from './RedisService.js';
-import type { INewsService } from './interfaces/INewsService.js';
-
-export type NewsListPayload = {
-    type: 'search' | 'all';
-    query: string | null;
-    pagination: {
-        page: number;
-        limit: number;
-        totalItems: number;
-        totalPages: number;
-    };
-    data: Awaited<ReturnType<PrismaService['news']['findMany']>>;
-};
-
-export type NewsByIdResult = {
-    data: Prisma.NewsGetPayload<object>;
-    fromCache: boolean;
-};
-
-export type RelatedNews = Prisma.NewsGetPayload<{
-    select: {
-        id: true;
-        title: true;
-        summary: true;
-        image_url: true;
-        published_at: true;
-    };
-}>;
-
-export type RelatedNewsResult = {
-    data: RelatedNews[];
-    fromCache: boolean;
-};
-
+import { INewsService } from './interfaces/INewsService.js';
+import { News } from '../models/entities/News.js';
+import { NewsMapper } from '../mappers/NewsMapper.js';
+import { slugify } from '../utils/slugify.js';
+import { env } from '../config/env.js';
 export class NewsService implements INewsService {
     public constructor(
         private readonly prisma: PrismaService = PrismaService.getInstance(),
         private readonly redis: RedisService = RedisService.getInstance(),
     ) {
     }
-
-    public async getNews(
-        queryOptions: QueryOptions,
-    ): Promise<{ data: NewsListPayload; fromCache: boolean }> {
-        const page = queryOptions.page || 1;
-        const limit = queryOptions.limit || 10;
+    
+    public async getNews(queryOptions: QueryOptions): Promise<News[]> {
+        const page = queryOptions.page && queryOptions.page > 0 ? queryOptions.page : 1;
+        const limit = queryOptions.limit && queryOptions.limit > 0 ? queryOptions.limit : 10;
         const query = queryOptions.query?.trim() || undefined;
-        const where: Prisma.NewsWhereInput | undefined = query
+        const category = queryOptions.category?.trim() || "all";
+
+        const where = query
             ? {
                 OR: [
                     { title: { contains: query } },
-                    { summary: { contains: query } },
                     { content: { contains: query } },
                 ],
             }
             : undefined;
+
         const cacheKey = `news:list:${encodeURIComponent(
             query?.toLowerCase() || 'all',
-        )}:page:${page}:limit:${limit}`;
-        const cachedData = await this.redis.get<NewsListPayload>(cacheKey);
+        )}category:${category}:page:${page}:limit:${limit}`;
+
+        const cachedData = await this.redis.get<News[]>(cacheKey);
         if (cachedData) {
-            return { data: cachedData, fromCache: true };
+            if (env.DEVELOPMENT_MODE) {
+                console.log('source: cache', cacheKey);
+            }
+            return cachedData;
         }
 
-        const [news, totalItems] = await Promise.all([
-            this.prisma.news.findMany({
+        const news = (
+            await this.prisma.news.findMany({
                 skip: (page - 1) * limit,
                 take: limit,
-                where,
+                where: {
+                    ...where,
+                    ...(category && {
+                        category: {
+                            is: {
+                                name: category,
+                            },
+                        },
+                    }),
+                },
                 orderBy: { published_at: 'desc' },
-            }),
-            this.prisma.news.count({ where }),
-        ]);
-        const payload: NewsListPayload = {
-            type: query ? 'search' : 'all',
-            query: query || null,
-            pagination: {
-                page,
-                limit,
-                totalItems,
-                totalPages: Math.ceil(totalItems / limit),
-            },
-            data: news,
-        };
-        await this.redis.set(cacheKey, payload, 180);
-        return { data: payload, fromCache: false };
+                include: {
+                    category: true, // opcional: retorna a categoria junto com a notícia
+                },
+            })
+        ).map(NewsMapper.fromPrisma);
+
+        if (env.DEVELOPMENT_MODE) {
+            console.log('source: database', cacheKey);
+        }
+        await this.redis.set(cacheKey, news, 180);
+        return news;
     }
 
-    public async getNewsById(queryOptions: QueryOptions) {
-        if (!queryOptions.id) {
+    public async createNews(input: CreateNewsDto): Promise<News> {
+        const savedNews = await this.prisma.news.create({
+            data: {
+                ...input,
+                slug: input.slug || slugify(input.title),
+            },
+        });
+
+        await this.redis.delByPattern('news:list:*');
+        return NewsMapper.fromPrisma(savedNews);
+    }
+
+    public async getNewsById(queryOptions: QueryOptions): Promise<News | null> {
+        const id = queryOptions.id?.trim();
+        if (!id) {
             return null;
         }
 
-        const cacheKey = `news:${queryOptions.id}`;
-        const cachedNews = await this.redis.get<Prisma.NewsGetPayload<object>>(cacheKey);
+        const cacheKey = `news:${id}`;
+        const cachedNews = await this.redis.get<News>(cacheKey);
         if (cachedNews) {
-            return { data: cachedNews, fromCache: true };
+            return cachedNews;
         }
 
         const news = await this.prisma.news.findUnique({
-            where: { id: queryOptions.id },
+            where: { id },
         });
         if (!news) {
             return null;
         }
 
-        await this.redis.set(cacheKey, news, 300);
-        return { data: news, fromCache: false };
+        const mappedNews = NewsMapper.fromPrisma(news);
+        await this.redis.set(cacheKey, mappedNews, 300);
+        return mappedNews;
     }
 
-    public async getRelatedNews(queryOptions: QueryOptions) {
-        if (!queryOptions.id) {
+    public async getNewsBySlug(queryOptions: QueryOptions): Promise<News | null> {
+        const slug = queryOptions.slug?.trim();
+        if (!slug) {
             return null;
         }
 
-        const limit = queryOptions.limit || 4;
-        const cacheKey = `news:${queryOptions.id}:related:limit:${limit}`;
-        const cachedNews = await this.redis.get<RelatedNews[]>(cacheKey);
+        const cacheKey = `news:slug:${slug}`;
+        const cachedNews = await this.redis.get<News>(cacheKey);
         if (cachedNews) {
-            return { data: cachedNews, fromCache: true };
+            return cachedNews;
+        }
+
+        const news = await this.prisma.news.findUnique({
+            where: { slug },
+        });
+        if (!news) {
+            return null;
+        }
+
+        const mappedNews = NewsMapper.fromPrisma(news);
+        await this.redis.set(cacheKey, mappedNews, 300);
+        return mappedNews;
+    }
+
+    public async getRelatedNews(queryOptions: QueryOptions): Promise<News[] | null> {
+        const id = queryOptions.id?.trim();
+        if (!id) {
+            return null;
+        }
+
+        const limit = queryOptions.limit && queryOptions.limit > 0 ? queryOptions.limit : 4;
+        const cacheKey = `news:${id}:related:limit:${limit}`;
+        const cachedNews = await this.redis.get<News[]>(cacheKey);
+        if (cachedNews) {
+            return cachedNews;
         }
 
         const currentNews = await this.prisma.news.findUnique({
-            where: { id: queryOptions.id },
+            where: { id },
             select: { id: true, category_id: true },
         });
         if (!currentNews) {
@@ -139,15 +157,9 @@ export class NewsService implements INewsService {
             },
             take: limit,
             orderBy: { published_at: 'desc' },
-            select: {
-                id: true,
-                title: true,
-                summary: true,
-                image_url: true,
-                published_at: true,
-            },
         });
-        await this.redis.set(cacheKey, relatedNews, 300);
-        return { data: relatedNews, fromCache: false };
+        const mappedNews = relatedNews.map(NewsMapper.fromPrisma);
+        await this.redis.set(cacheKey, mappedNews, 300);
+        return mappedNews;
     }
 }
