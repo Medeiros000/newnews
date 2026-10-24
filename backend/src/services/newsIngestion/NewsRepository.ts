@@ -3,10 +3,12 @@ import { RedisService } from '../RedisService.js';
 import { NormalizedNews } from './NewsNormalizer.js';
 
 export class NewsRepository {
-    public constructor(
-        private readonly prisma: PrismaService = PrismaService.getInstance(),
-        private readonly redis: RedisService = RedisService.getInstance(),
-    ) {}
+    private readonly prisma: PrismaService;
+    private readonly redis: RedisService;
+    public constructor() {
+        this.prisma = PrismaService.getInstance();
+        this.redis = RedisService.getInstance();
+    }
 
     public async save(newsItem: NormalizedNews) {
         const categoryId = await this.findCategoryId(newsItem.category);

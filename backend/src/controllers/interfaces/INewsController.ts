@@ -6,6 +6,11 @@ export interface INewsController {
         response: Response,
         next: NextFunction,
     ): Promise<void>;
+    createNews(
+        request: Request,
+        response: Response,
+        next: NextFunction,
+    ): Promise<void>;
     searchNews(
         request: Request,
         response: Response,

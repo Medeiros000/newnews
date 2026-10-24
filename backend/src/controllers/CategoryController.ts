@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import { CategoryService } from '../services/CategoryService.js';
-import { QueryOptions } from '../commands/QueryOptions.js';
+import { QueryOptions } from '../queries/QueryOptions.js';
 import { ICategoryService } from '../services/interfaces/ICategoryService.js';
 import { ICategoryController } from './interfaces/ICategoryController.js';
 

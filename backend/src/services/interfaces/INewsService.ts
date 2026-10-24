@@ -1,14 +1,11 @@
-import { QueryOptions } from '../../commands/QueryOptions.js';
-import type {
-    NewsByIdResult,
-    NewsListPayload,
-    RelatedNewsResult,
-} from '../NewsService.js';
+import { News } from '../../models/entities/News.js';
+import { QueryOptions } from '../../queries/QueryOptions.js';
+import { CreateNewsDto } from '../../dtos/CreateNewsDto.js';
+
 
 export interface INewsService {
-    getNews(
-        queryOptions: QueryOptions,
-    ): Promise<{ data: NewsListPayload; fromCache: boolean }>;
-    getNewsById(queryOptions: QueryOptions): Promise<NewsByIdResult | null>;
-    getRelatedNews(queryOptions: QueryOptions): Promise<RelatedNewsResult | null>;
+    getNews(queryOptions: QueryOptions): Promise<News[]>;
+    createNews(input: CreateNewsDto): Promise<News>;
+    getNewsById(queryOptions: QueryOptions): Promise<News | null>;
+    getRelatedNews(queryOptions: QueryOptions): Promise<News[] | null>;
 }

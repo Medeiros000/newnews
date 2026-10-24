@@ -1,6 +1,6 @@
 export class News {
     private id: string;
-    private category_id: string;
+    private category_id: number;
     private badge_bg: string;
     private title: string;
     private summary: string;
@@ -9,9 +9,9 @@ export class News {
     private published_at: Date;
     private author: string;
     private source: string;
-    constructor(
+    public constructor(
         id: string,
-        category_id: string,
+        category_id: number,
         badge_bg: string,
         title: string,
         summary: string,
@@ -31,5 +31,35 @@ export class News {
         this.published_at = published_at;
         this.author = author;
         this.source = source;
+    }
+    public getId(): string {
+        return this.id;
+    }
+    public getCategoryId(): number {
+        return this.category_id;
+    }
+    public getBadgeBg(): string {
+        return this.badge_bg;
+    }
+    public getTitle(): string {
+        return this.title;
+    }
+    public getSummary(): string {
+        return this.summary;
+    }
+    public getContent(): string {
+        return this.content;
+    }
+    public getImageUrl(): string {
+        return this.image_url;
+    }
+    public getPublishedAt(): Date {
+        return this.published_at;
+    }
+    public getAuthor(): string {
+        return this.author;
+    }
+    public getSource(): string {
+        return this.source;
     }
 }

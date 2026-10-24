@@ -51,12 +51,7 @@ export class NewsNormalizer {
 
         // Extrai o domínio real da URL em vez de usar o campo "language" como fallback
         const source = this.extractDomain(raw.url);
-        const category = Array.isArray(raw.category)
-            ? raw.category.join(' ')
-            : raw.category;
-
         return {
-            category,
             badge_bg: 'bg-blue-500',
             title,
             summary,
