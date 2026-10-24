@@ -51,9 +51,13 @@ export class NewsNormalizer {
         // Extrai o domínio real da URL em vez de usar o campo "language" como fallback
         const source = this.extractDomain(raw.url);
         const category = Array.isArray(raw.category)
-            ? raw.category.filter((value): value is string => typeof value === 'string')
+            ? raw.category
+                .filter((value): value is string => typeof value === 'string')
+                .flatMap((value) => value.split(','))
+                .map((value) => value.trim())
+                .filter(Boolean)
             : typeof raw.category === 'string'
-                ? [raw.category]
+                ? raw.category.split(',').map((value) => value.trim()).filter(Boolean)
                 : undefined;
         return {
             ...(category && category.length > 0 ? { category } : {}),

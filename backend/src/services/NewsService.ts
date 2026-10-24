@@ -6,18 +6,20 @@ import { INewsService } from './interfaces/INewsService.js';
 import { News } from '../models/entities/News.js';
 import { NewsMapper } from '../mappers/NewsMapper.js';
 import { slugify } from '../utils/slugify.js';
-
+import { env } from '../config/env.js';
 export class NewsService implements INewsService {
     public constructor(
         private readonly prisma: PrismaService = PrismaService.getInstance(),
         private readonly redis: RedisService = RedisService.getInstance(),
     ) {
     }
-
+    
     public async getNews(queryOptions: QueryOptions): Promise<News[]> {
         const page = queryOptions.page && queryOptions.page > 0 ? queryOptions.page : 1;
         const limit = queryOptions.limit && queryOptions.limit > 0 ? queryOptions.limit : 10;
         const query = queryOptions.query?.trim() || undefined;
+        const category = queryOptions.category?.trim() || "all";
+
         const where = query
             ? {
                 OR: [
@@ -26,11 +28,16 @@ export class NewsService implements INewsService {
                 ],
             }
             : undefined;
+
         const cacheKey = `news:list:${encodeURIComponent(
             query?.toLowerCase() || 'all',
-        )}:page:${page}:limit:${limit}`;
+        )}category:${category}:page:${page}:limit:${limit}`;
+
         const cachedData = await this.redis.get<News[]>(cacheKey);
         if (cachedData) {
+            if (env.DEVELOPMENT_MODE) {
+                console.log('source: cache', cacheKey);
+            }
             return cachedData;
         }
 
@@ -38,11 +45,26 @@ export class NewsService implements INewsService {
             await this.prisma.news.findMany({
                 skip: (page - 1) * limit,
                 take: limit,
-                where,
+                where: {
+                    ...where,
+                    ...(category && {
+                        category: {
+                            is: {
+                                name: category,
+                            },
+                        },
+                    }),
+                },
                 orderBy: { published_at: 'desc' },
+                include: {
+                    category: true, // opcional: retorna a categoria junto com a notícia
+                },
             })
         ).map(NewsMapper.fromPrisma);
 
+        if (env.DEVELOPMENT_MODE) {
+            console.log('source: database', cacheKey);
+        }
         await this.redis.set(cacheKey, news, 180);
         return news;
     }
@@ -85,7 +107,6 @@ export class NewsService implements INewsService {
 
     public async getNewsBySlug(queryOptions: QueryOptions): Promise<News | null> {
         const slug = queryOptions.slug?.trim();
-        console.log('getNewsBySlug in NewsService called with slug:', slug); // Debugging line
         if (!slug) {
             return null;
         }

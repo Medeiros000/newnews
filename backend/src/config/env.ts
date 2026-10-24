@@ -7,6 +7,7 @@ const envSchema = z.object({
     CURRENTS_API_BASE_URL: z.string(),
     REDIS_URL: z.string(),
     CURRENTS_API_KEY: z.string().optional(),
+    DEVELOPMENT_MODE: z.coerce.boolean().optional().default(false),
 });
 
 export const env = envSchema.parse(process.env);

@@ -67,6 +67,10 @@ export class NewsRepository {
             console.log(
                 `📂 Categoria "${categoryTexts?.join(', ')}" associada a "${matchingCategory.name}" (ID ${matchingCategory.id}).`,
             );
+        } else {
+            console.warn(
+                `⚠️ Nenhuma categoria da API correspondeu a "${categoryTexts?.join(', ') || 'nenhuma'}"; usando "${resolvedCategory.name}" (ID ${resolvedCategory.id}).`,
+            );
         }
 
         return resolvedCategory.id;
@@ -83,21 +87,29 @@ export class NewsRepository {
         const normalizedName = this.normalizeCategoryText(category.name);
         const normalizedLabel = this.normalizeCategoryText(category.label);
 
-        if (normalizedText === normalizedName || normalizedText === normalizedLabel) {
-            return 3;
+        if (normalizedText === normalizedName) {
+            return 100;
         }
 
-        if (
-            normalizedText.includes(normalizedName) ||
-            normalizedName.includes(normalizedText) ||
-            normalizedText.includes(normalizedLabel) ||
-            normalizedLabel.includes(normalizedText)
-        ) {
-            return 2;
+        if (normalizedText === normalizedLabel) {
+            return 90;
         }
 
-        const categoryTerms = normalizedName.split(' ');
-        return categoryTerms.some((term) => normalizedText.includes(term)) ? 1 : 0;
+        const textTerms = normalizedText.split(' ');
+        const nameTerms = normalizedName.split(' ');
+        const labelTerms = normalizedLabel.split(' ');
+        const hasExactTerm = nameTerms.some((term) => textTerms.includes(term))
+            || labelTerms.some((term) => textTerms.includes(term));
+
+        if (hasExactTerm) {
+            return 80;
+        }
+
+        if (normalizedName.includes(normalizedText) || normalizedLabel.includes(normalizedText)) {
+            return 60;
+        }
+
+        return 0;
     }
 
     private normalizeCategoryText(value?: string): string {

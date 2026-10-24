@@ -78,7 +78,7 @@ export class NewsController implements INewsController {
         response: Response,
         next: NextFunction,
     ): Promise<void> {
-        console.log('Chamando getNewsBySlug no controller com slug:', request.params.slug);
+
         try {
             const result = await this.service.getNewsBySlug(
                 this.createQueryOptions(request),
@@ -132,6 +132,9 @@ export class NewsController implements INewsController {
         const slug = typeof request.params.slug === 'string'
             ? request.params.slug
             : undefined;
+        const category = typeof request.query.category === 'string'
+            ? request.query.category
+            : undefined;
         const page = this.parseNumber(request.query.page, 1);
         const limit = this.parseNumber(request.query.limit, 10);
 
@@ -143,6 +146,7 @@ export class NewsController implements INewsController {
             limit,
             query,
             slug,
+            category,
         });
     }
 
