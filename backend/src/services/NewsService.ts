@@ -83,6 +83,31 @@ export class NewsService implements INewsService {
         return mappedNews;
     }
 
+    public async getNewsBySlug(queryOptions: QueryOptions): Promise<News | null> {
+        const slug = queryOptions.slug?.trim();
+        console.log('getNewsBySlug in NewsService called with slug:', slug); // Debugging line
+        if (!slug) {
+            return null;
+        }
+
+        const cacheKey = `news:slug:${slug}`;
+        const cachedNews = await this.redis.get<News>(cacheKey);
+        if (cachedNews) {
+            return cachedNews;
+        }
+
+        const news = await this.prisma.news.findUnique({
+            where: { slug },
+        });
+        if (!news) {
+            return null;
+        }
+
+        const mappedNews = NewsMapper.fromPrisma(news);
+        await this.redis.set(cacheKey, mappedNews, 300);
+        return mappedNews;
+    }
+
     public async getRelatedNews(queryOptions: QueryOptions): Promise<News[] | null> {
         const id = queryOptions.id?.trim();
         if (!id) {

@@ -73,6 +73,30 @@ export class NewsController implements INewsController {
         }
     }
 
+    public async getNewsBySlug(
+        request: Request,
+        response: Response,
+        next: NextFunction,
+    ): Promise<void> {
+        console.log('Chamando getNewsBySlug no controller com slug:', request.params.slug);
+        try {
+            const result = await this.service.getNewsBySlug(
+                this.createQueryOptions(request),
+            );
+            if (!result) {
+                response.status(404).json({
+                    success: false,
+                    error: 'Notícia não encontrada',
+                });
+                return;
+            }
+
+            response.json({ success: true, data: result });
+        } catch (error) {
+            next(error);
+        }
+    }
+
     public async getRelatedNews(
         request: Request,
         response: Response,
@@ -105,6 +129,9 @@ export class NewsController implements INewsController {
             : typeof request.query.q === 'string'
                 ? request.query.q
                 : undefined;
+        const slug = typeof request.params.slug === 'string'
+            ? request.params.slug
+            : undefined;
         const page = this.parseNumber(request.query.page, 1);
         const limit = this.parseNumber(request.query.limit, 10);
 
@@ -115,6 +142,7 @@ export class NewsController implements INewsController {
             page,
             limit,
             query,
+            slug,
         });
     }
 

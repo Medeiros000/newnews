@@ -18,5 +18,6 @@ export class NewsRouter {
         this.router.get('/search', this.controller.searchNews.bind(this.controller));
         this.router.get('/:id', this.controller.getNewsById.bind(this.controller));
         this.router.get('/:id/related', this.controller.getRelatedNews.bind(this.controller));
+        this.router.get('/pt-br/:slug', this.controller.getNewsBySlug.bind(this.controller));
     }
 }

@@ -4,9 +4,9 @@ import { NormalizedNews } from './NewsNormalizer.js';
 
 export const newsValidationSchema = z.object({
     category: z.array(z.string()).optional(),
-    badge_bg: z.string().max(20).default('bg-blue-500'),
-    title: z.string().min(1).max(255),
-    slug: z.string().min(1),
+    badge_bg: z.string().trim().max(20).default('bg-blue-500'),
+    title: z.string().trim().min(1).max(255),
+    slug: z.string().trim().min(1),
     content: z.string().min(1),
     image_url: z.string().url().max(2048),
     published_at: z.date(),

@@ -29,7 +29,7 @@ export class NewsNormalizer {
 
     public normalize(raw: CurrentsArticle): NormalizedNews {
         // Título truncado a 255 chars
-        const rawTitle = raw.title || 'Notícia sem título';
+        const rawTitle = raw.title || raw.description?.slice(0, 60) || 'Notícia sem título';
         const title = rawTitle.slice(0, 255);
         const slug = slugify(title);
 

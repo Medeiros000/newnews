@@ -8,4 +8,5 @@ export interface INewsService {
     createNews(input: CreateNewsDto): Promise<News>;
     getNewsById(queryOptions: QueryOptions): Promise<News | null>;
     getRelatedNews(queryOptions: QueryOptions): Promise<News[] | null>;
+    getNewsBySlug(queryOptions: QueryOptions): Promise<News | null>;
 }

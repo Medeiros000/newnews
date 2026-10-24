@@ -20,7 +20,7 @@ model User {
 }
 
 model Category {
-    id    Int @id @default(autoincrement())
+    id    Int    @id @default(autoincrement())
     name  String @unique
     label String
     icon  String
@@ -35,7 +35,7 @@ model News {
     category_id  Int
     badge_bg     String
     title        String
-    slug         String
+    slug         String   @unique
     content      String
     image_url    String
     published_at DateTime

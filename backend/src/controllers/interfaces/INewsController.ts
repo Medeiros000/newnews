@@ -26,4 +26,9 @@ export interface INewsController {
         response: Response,
         next: NextFunction,
     ): Promise<void>;
+    getNewsBySlug(
+        request: Request,
+        response: Response,
+        next: NextFunction,
+    ): Promise<void>;
 }
