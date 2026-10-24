@@ -1,13 +1,8 @@
 import type { Server } from 'http';
 import { App } from './app.js';
 import { env } from './config/env.js';
-import { PrismaService } from './services/PrismaService.js';
-import { RedisService } from './services/RedisService.js';
 
-const prisma = PrismaService.getInstance();
-const redis = RedisService.getInstance();
-
-const app = new App(prisma, redis);
+const app = new App();
 
 const server: Server = app.listen(env.PORT, () => {
     console.log(`API server listening on http://localhost:${env.PORT}`);
@@ -21,8 +16,6 @@ const shutdown = (signal: 'SIGINT' | 'SIGTERM'): void => {
             console.error('Error while closing HTTP server:', error);
             process.exit(1);
         }
-        await prisma.$disconnect();
-        await redis.disconnect();
         console.log('HTTP server closed.');
         process.exit(0);
     });

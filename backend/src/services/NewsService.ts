@@ -5,6 +5,7 @@ import { RedisService } from './RedisService.js';
 import { INewsService } from './interfaces/INewsService.js';
 import { News } from '../models/entities/News.js';
 import { NewsMapper } from '../mappers/NewsMapper.js';
+import { slugify } from '../utils/slugify.js';
 
 export class NewsService implements INewsService {
     public constructor(
@@ -21,7 +22,6 @@ export class NewsService implements INewsService {
             ? {
                 OR: [
                     { title: { contains: query } },
-                    { summary: { contains: query } },
                     { content: { contains: query } },
                 ],
             }
@@ -49,7 +49,10 @@ export class NewsService implements INewsService {
 
     public async createNews(input: CreateNewsDto): Promise<News> {
         const savedNews = await this.prisma.news.create({
-            data: input,
+            data: {
+                ...input,
+                slug: input.slug || slugify(input.title),
+            },
         });
 
         await this.redis.delByPattern('news:list:*');

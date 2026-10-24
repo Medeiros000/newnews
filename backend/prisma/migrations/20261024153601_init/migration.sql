@@ -27,7 +27,7 @@ CREATE TABLE "news" (
     "category_id" INTEGER NOT NULL,
     "badge_bg" TEXT NOT NULL,
     "title" TEXT NOT NULL,
-    "summary" TEXT NOT NULL,
+    "slug" TEXT NOT NULL,
     "content" TEXT NOT NULL,
     "image_url" TEXT NOT NULL,
     "published_at" TIMESTAMP(3) NOT NULL,

@@ -12,6 +12,7 @@ export interface CurrentsArticle {
     author?: string;
     domain?: string;
     language?: string;
+    category?: string | string[];
 }
 
 export class CurrentsApiClient {
@@ -29,7 +30,7 @@ export class CurrentsApiClient {
     public async fetchLatestNews(): Promise<CurrentsArticle[]> {
         try {
             const url = `${this.baseUrl}?language=pt&apiKey=${this.apiKey}`;
-
+            console.log(`🔗 Requisição para Currents API: ${url}`);
             const response = await fetch(url, {
                 signal: AbortSignal.timeout(8000),
             });

@@ -8,7 +8,7 @@ export class NewsMapper {
             prismaNews.category_id,
             prismaNews.badge_bg,
             prismaNews.title,
-            prismaNews.summary,
+            prismaNews.slug,
             prismaNews.content,
             prismaNews.image_url,
             prismaNews.published_at,

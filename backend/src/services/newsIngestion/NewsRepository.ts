@@ -17,7 +17,7 @@ export class NewsRepository {
                 category_id: categoryId,
                 badge_bg: newsItem.badge_bg,
                 title: newsItem.title,
-                summary: newsItem.summary,
+                slug: newsItem.slug,
                 content: newsItem.content,
                 image_url: newsItem.image_url,
                 published_at: newsItem.published_at,
@@ -31,7 +31,7 @@ export class NewsRepository {
         return saved;
     }
 
-    private async findCategoryId(categoryText?: string): Promise<number> {
+    private async findCategoryId(categoryTexts?: string[]): Promise<number> {
         const categories = await this.prisma.category.findMany({
             select: {
                 id: true,
@@ -40,11 +40,14 @@ export class NewsRepository {
             },
         });
 
-        const normalizedText = this.normalizeCategoryText(categoryText);
         const matchingCategory = categories
             .map((category) => ({
                 category,
-                score: this.getCategoryMatchScore(category, normalizedText),
+                score: (categoryTexts || [])
+                    .map((categoryText) =>
+                        this.getCategoryMatchScore(category, this.normalizeCategoryText(categoryText)),
+                    )
+                    .reduce((bestScore, score) => Math.max(bestScore, score), 0),
             }))
             .filter(({ score }) => score > 0)
             .sort((left, right) => right.score - left.score)[0]?.category;
@@ -57,6 +60,12 @@ export class NewsRepository {
         if (!resolvedCategory) {
             throw new Error(
                 'Nenhuma categoria correspondente foi encontrada e a categoria general não está cadastrada.',
+            );
+        }
+
+        if (matchingCategory) {
+            console.log(
+                `📂 Categoria "${categoryTexts?.join(', ')}" associada a "${matchingCategory.name}" (ID ${matchingCategory.id}).`,
             );
         }
 

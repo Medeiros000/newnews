@@ -3,10 +3,10 @@ import { z } from 'zod';
 import { NormalizedNews } from './NewsNormalizer.js';
 
 export const newsValidationSchema = z.object({
-    category: z.string().optional(),
+    category: z.array(z.string()).optional(),
     badge_bg: z.string().max(20).default('bg-blue-500'),
     title: z.string().min(1).max(255),
-    summary: z.string().min(1),
+    slug: z.string().min(1),
     content: z.string().min(1),
     image_url: z.string().url().max(2048),
     published_at: z.date(),

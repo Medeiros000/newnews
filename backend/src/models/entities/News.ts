@@ -1,9 +1,11 @@
+import { slugify } from '../../utils/slugify.js';
+
 export class News {
     private id: string;
     private category_id: number;
     private badge_bg: string;
     private title: string;
-    private summary: string;
+    private slug: string;
     private content: string;
     private image_url: string;
     private published_at: Date;
@@ -14,7 +16,7 @@ export class News {
         category_id: number,
         badge_bg: string,
         title: string,
-        summary: string,
+        slug: string,
         content: string,
         image_url: string,
         published_at: Date,
@@ -25,7 +27,7 @@ export class News {
         this.category_id = category_id;
         this.badge_bg = badge_bg;
         this.title = title;
-        this.summary = summary;
+        this.slug = slugify(title);
         this.content = content;
         this.image_url = image_url;
         this.published_at = published_at;
@@ -44,8 +46,8 @@ export class News {
     public getTitle(): string {
         return this.title;
     }
-    public getSummary(): string {
-        return this.summary;
+    public getSlug(): string {
+        return this.slug;
     }
     public getContent(): string {
         return this.content;
