@@ -38,6 +38,7 @@ model News {
     slug         String   @unique
     content      String
     image_url    String
+    news_url     String
     published_at DateTime
     author       String
     source       String

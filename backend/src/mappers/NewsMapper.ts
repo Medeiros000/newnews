@@ -11,6 +11,7 @@ export class NewsMapper {
             prismaNews.slug,
             prismaNews.content,
             prismaNews.image_url,
+            prismaNews.news_url,
             prismaNews.published_at,
             prismaNews.author,
             prismaNews.source

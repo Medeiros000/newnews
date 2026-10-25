@@ -28,7 +28,7 @@ export function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/news" element={<NewsPage />} />
+          <Route path="/news/:slug" element={<NewsPage />} />
           <Route path="/config" element={<ConfigPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/login" element={<LoginPage />} />

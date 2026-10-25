@@ -19,12 +19,11 @@ export const newsService = {
    * @param {Object} [params] - Query parameters (category, query, page, limit)
    */
   async getNews(params = {}) {
-    if (APP_CONFIG.IS_MOCK_MODE) return mockAdapter.getNews(params);
-
-    const { data: res } = await api.get('/news', { params });
+    const res = await api.get('/news', { params });
+    console.log('Fetched news articles:', res.data);
     return {
-      success: true,
-      data: res.data ?? res,
+      data: res.data.data,
+      success: res.data.success,
       meta: res.meta ?? { total: res.length ?? 0, hasMore: false },
     };
   },
@@ -40,10 +39,18 @@ export const newsService = {
   },
 
   /**
+   * Fetches a single news article by its ID.
+   * @param {string} slug - The article slug
+   */
+  async getNewsBySlug(slug) {
+    const { data: res } = await api.get(`/news/pt-br/${slug}`);
+    return { success: true, data: res.data ?? res };
+  },
+
+  /**
    * Fetches available news categories and the dynamic navigation items.
    */
   async getCategories() {
-    if (APP_CONFIG.IS_MOCK_MODE) return mockAdapter.getCategories();
     const { data: res } = await api.get('/categories');
     return { success: true, data: res.data ?? res };
   },

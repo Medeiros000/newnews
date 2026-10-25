@@ -20,6 +20,7 @@ export class NewsRepository {
                 slug: newsItem.slug,
                 content: newsItem.content,
                 image_url: newsItem.image_url,
+                news_url: newsItem.news_url,
                 published_at: newsItem.published_at,
                 author: newsItem.author,
                 source: newsItem.source,

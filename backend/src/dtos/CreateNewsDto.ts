@@ -6,6 +6,7 @@ export interface CreateNewsDto {
     sumario: string;
     content: string;
     image_url: string;
+    news_url: string;
     published_at: Date;
     author: string;
     source: string;

@@ -8,6 +8,7 @@ export class News {
     private slug: string;
     private content: string;
     private image_url: string;
+    private news_url: string;
     private published_at: Date;
     private author: string;
     private source: string;
@@ -19,6 +20,7 @@ export class News {
         slug: string,
         content: string,
         image_url: string,
+        news_url: string,
         published_at: Date,
         author: string,
         source: string
@@ -30,6 +32,7 @@ export class News {
         this.slug = slugify(title);
         this.content = content;
         this.image_url = image_url;
+        this.news_url = news_url;
         this.published_at = published_at;
         this.author = author;
         this.source = source;
@@ -54,6 +57,9 @@ export class News {
     }
     public getImageUrl(): string {
         return this.image_url;
+    }
+    public getNewsUrl(): string {
+        return this.news_url;
     }
     public getPublishedAt(): Date {
         return this.published_at;
