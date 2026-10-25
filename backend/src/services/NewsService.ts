@@ -6,7 +6,7 @@ import { INewsService } from './interfaces/INewsService.js';
 import { News } from '../models/entities/News.js';
 import { NewsMapper } from '../mappers/NewsMapper.js';
 import { slugify } from '../utils/slugify.js';
-import { env } from '../config/env.js';
+
 export class NewsService implements INewsService {
     public constructor(
         private readonly prisma: PrismaService = PrismaService.getInstance(),
@@ -18,7 +18,7 @@ export class NewsService implements INewsService {
         const page = queryOptions.page && queryOptions.page > 0 ? queryOptions.page : 1;
         const limit = queryOptions.limit && queryOptions.limit > 0 ? queryOptions.limit : 10;
         const query = queryOptions.query?.trim() || undefined;
-        const category = queryOptions.category?.trim() || "all";
+        const category = queryOptions.category?.trim() || undefined;
 
         const where = query
             ? {
@@ -31,13 +31,10 @@ export class NewsService implements INewsService {
 
         const cacheKey = `news:list:${encodeURIComponent(
             query?.toLowerCase() || 'all',
-        )}category:${category}:page:${page}:limit:${limit}`;
+        )}category:${category || 'all'}:page:${page}:limit:${limit}`;
 
         const cachedData = await this.redis.get<News[]>(cacheKey);
         if (cachedData) {
-            if (env.DEVELOPMENT_MODE) {
-                console.log('source: cache', cacheKey);
-            }
             return cachedData;
         }
 
@@ -62,9 +59,6 @@ export class NewsService implements INewsService {
             })
         ).map(NewsMapper.fromPrisma);
 
-        if (env.DEVELOPMENT_MODE) {
-            console.log('source: database', cacheKey);
-        }
         await this.redis.set(cacheKey, news, 180);
         return news;
     }

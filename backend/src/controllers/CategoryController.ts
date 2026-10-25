@@ -11,7 +11,6 @@ export class CategoryController implements ICategoryController {
 
 	public async getAllCategories(_request: Request, response: Response): Promise<Response> {
 		const queryOptions = new QueryOptions(_request.query);
-		console.log('Query Options:', queryOptions);
 
 		try {
 			const categories = await this.service.getAllCategories(queryOptions);
@@ -29,7 +28,6 @@ export class CategoryController implements ICategoryController {
 		response: Response,
 	): Promise<Response> {
 		const queryOptions = new QueryOptions({ ...request.params, ...request.query });
-		console.log('Query Options:', queryOptions);
 		try {
 			const category = await this.service.getCategoryById(queryOptions);
 

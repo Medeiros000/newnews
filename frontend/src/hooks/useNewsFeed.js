@@ -19,9 +19,9 @@ export function useNewsFeed({
   searchQuery,
   bookmarkedArticleIds,
 }) {
-  const [categories, setCategories] = useState(['Todos']);
+  const [categories, setCategories] = useState([]);
   const [navItems, setNavItems] = useState([]);
-  const [activeCategory, setActiveCategory] = useState('Todos');
+  const [activeCategory, setActiveCategory] = useState([]);
   const [articlesList, setArticlesList] = useState([]);
   const [heroArticle, setHeroArticle] = useState(null);
   const [page, setPage] = useState(1);
@@ -93,7 +93,7 @@ export function useNewsFeed({
 
       try {
         const res = await newsService.getNews({
-          category: isSavedTabActive ? 'Todos' : effectiveCategory,
+          // category: isSavedTabActive ? 'Todos' : effectiveCategory,
           query: cleanQuery,
           page: targetPage,
           limit: APP_CONFIG.DEFAULT_PAGE_LIMIT,

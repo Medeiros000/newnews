@@ -30,6 +30,7 @@ CREATE TABLE "news" (
     "slug" TEXT NOT NULL,
     "content" TEXT NOT NULL,
     "image_url" TEXT NOT NULL,
+    "news_url" TEXT NOT NULL,
     "published_at" TIMESTAMP(3) NOT NULL,
     "author" TEXT NOT NULL,
     "source" TEXT NOT NULL,

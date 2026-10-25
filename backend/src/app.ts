@@ -12,6 +12,7 @@ import { UserRouter } from './routes/UserRouter.js';
 import { NewsRouter } from './routes/NewsRouter.js';
 import { CategoryRouter } from './routes/CategoryRouter.js';
 import { NewsIngestionPipeline } from './services/newsIngestion/NewsIngestionPipeline.js';
+import cors from 'cors';
 
 const INGESTION_INTERVAL_MS = 60 * 60 * 1000; // 1 hora
 
@@ -19,9 +20,12 @@ export class App {
     public readonly instance: Application;
     private readonly pipeline: NewsIngestionPipeline;
     private ingestionTimer?: ReturnType<typeof setInterval>;
+    private readonly cors: any;
 
     constructor() {
         this.instance = express();
+        this.cors = cors();
+        this.instance.use(this.cors); // Habilita CORS para todas as rotas
         this.pipeline = new NewsIngestionPipeline();
         this.setupMiddlewares();
         this.setupRoutes();

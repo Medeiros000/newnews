@@ -8,6 +8,7 @@ export interface NormalizedNews {
     slug: string;
     content: string;
     image_url: string;
+    news_url: string;
     published_at: Date;
     author: string;
     source: string;
@@ -66,6 +67,7 @@ export class NewsNormalizer {
             slug,
             content,
             image_url,
+            news_url: raw.url || '',
             published_at,
             author: raw.author || 'Redação',
             source,
