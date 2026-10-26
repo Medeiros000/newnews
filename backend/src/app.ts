@@ -6,14 +6,13 @@ import express, {
     type ErrorRequestHandler,
 } from 'express';
 import type { Server } from 'http';
-import { ZodError } from 'zod';
-import indexRouter from './routes/index.js';
-import { healthRouter } from './routes/health.js';
-import { usersRouter } from './routes/users.js';
-import { newsRouter } from './routes/news.js';
-import { PrismaService } from './lib/prisma.js';
-import { RedisService } from './lib/redis.js';
+import { indexRouter } from './routes/index.js';
+import { HealthRouter } from './routes/HealthRouter.js';
+import { UserRouter } from './routes/UserRouter.js';
+import { NewsRouter } from './routes/NewsRouter.js';
+import { CategoryRouter } from './routes/CategoryRouter.js';
 import { NewsIngestionPipeline } from './services/newsIngestion/NewsIngestionPipeline.js';
+import cors from 'cors';
 
 const INGESTION_INTERVAL_MS = 60 * 60 * 1000; // 1 hora
 
@@ -21,13 +20,13 @@ export class App {
     public readonly instance: Application;
     private readonly pipeline: NewsIngestionPipeline;
     private ingestionTimer?: ReturnType<typeof setInterval>;
+    private readonly cors: any;
 
-    constructor(
-        private readonly prisma: PrismaService,
-        private readonly cache?: RedisService,
-    ) {
+    constructor() {
         this.instance = express();
-        this.pipeline = new NewsIngestionPipeline(prisma, cache);
+        this.cors = cors();
+        this.instance.use(this.cors); // Habilita CORS para todas as rotas
+        this.pipeline = new NewsIngestionPipeline();
         this.setupMiddlewares();
         this.setupRoutes();
         this.setupErrorHandling();
@@ -39,10 +38,16 @@ export class App {
     }
 
     private setupRoutes(): void {
+        const userRouter = new UserRouter();
+        const newsRouter = new NewsRouter();
+        const healthRouter = new HealthRouter();
+        const categoryRouter = new CategoryRouter();
+        
         this.instance.use('/', indexRouter);
-        this.instance.use('/api/users', usersRouter);
-        this.instance.use('/api/health', healthRouter);
-        this.instance.use('/api/news', newsRouter);
+        this.instance.use('/api/news', newsRouter.router);
+        this.instance.use('/api/users', userRouter.router);
+        this.instance.use('/api/health', healthRouter.router);
+        this.instance.use('/api/categories', categoryRouter.router);
     }
 
     private setupErrorHandling(): void {
@@ -56,13 +61,8 @@ export class App {
             response: Response,
             _next: NextFunction,
         ): void => {
-            if (error instanceof ZodError) {
-                response.status(400).json({
-                    error: 'Invalid request',
-                    issues: error.issues,
-                });
-                return;
-            }
+            console.error(error);
+
 
             console.error(error);
             response.status(500).json({ error: 'Internal server error' });

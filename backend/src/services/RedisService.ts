@@ -1,10 +1,15 @@
 import { Redis, type RedisOptions } from 'ioredis';
+import { env } from '../config/env.js';
 
 export class RedisService {
+    private static instance: RedisService | undefined;
     private readonly client: Redis;
 
-    constructor(redisUrl: string, options?: RedisOptions) {
-        this.client = new Redis(redisUrl, {
+    private constructor(
+        private readonly url: string = env.REDIS_URL,
+        options?: RedisOptions,
+    ) {
+        this.client = new Redis(url, {
             lazyConnect: true,
             maxRetriesPerRequest: 1,
             retryStrategy: (times: number): number => Math.min(times * 100, 3000),
@@ -14,6 +19,14 @@ export class RedisService {
         this.client.on('error', (_error: Error) => {
             // Suppress unhandled errors so process won't crash if Redis is unavailable
         });
+    }
+
+    public static getInstance(): RedisService {
+        if (!RedisService.instance) {
+            RedisService.instance = new RedisService();
+        }
+
+        return RedisService.instance;
     }
 
     public async get<T = unknown>(key: string): Promise<T | null> {

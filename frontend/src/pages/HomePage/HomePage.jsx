@@ -58,10 +58,12 @@ export function HomePage() {
     searchQuery: debouncedSearchQuery,
     bookmarkedArticleIds,
   });
+  console.log('home', gridArticles);
 
   const handleOpenArticleModal = (article) => {
     markArticleAsRead(article.id);
-    navigate(`/news?id=${article.id}`);
+    console.log('Navigating to article slug:', article.slug);
+    navigate(`/news/${article.slug}`);
   };
 
   const searchQuery = debouncedSearchQuery;

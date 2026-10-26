@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { Navbar } from '@/components/Navbar';
 import { ToastContainer } from '@/components/ToastContainer';
 import { newsService } from '@/services/newsService';
@@ -10,6 +10,8 @@ import {
   IconUser,
   IconShare,
   IconBookmark,
+  IconLinkFilled,
+  IconLinkPlus,
 } from '@tabler/icons-react';
 import './NewsPage.css';
 
@@ -20,10 +22,9 @@ import './NewsPage.css';
  * articles scored by category proximity and keyword similarity.
  */
 export function NewsPage() {
-  const [searchParams] = useSearchParams();
+  const { slug } = useParams();
   const navigate = useNavigate();
-  const articleId = searchParams.get('id');
-
+  const articleSlug = slug;
   const [article, setArticle] = useState(null);
   const [relatedNews, setRelatedNews] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -34,7 +35,7 @@ export function NewsPage() {
     useBookmarksStore();
 
   useEffect(() => {
-    if (!articleId) {
+    if (!articleSlug) {
       setError('Nenhuma notícia foi selecionada.');
       setIsLoading(false);
       return;
@@ -44,15 +45,15 @@ export function NewsPage() {
       try {
         setIsLoading(true);
         setError(null);
-
-        const res = await newsService.getNewsById(articleId);
+        const res = await newsService.getNewsBySlug(articleSlug);
         const articleData = res.data;
         setArticle(articleData);
-        markArticleAsRead(Number(articleId));
+        console.log('articleData: ', articleData);
+        // markArticleAsRead(Number(articleId));
 
         // Fetch contextual related articles scored by category, topic, and keyword relevance
         try {
-          const relatedRes = await newsService.getRelatedNews(articleId, {
+          const relatedRes = await newsService.getRelatedNews(articleData.id, {
             limit: 3,
           });
           setRelatedNews(relatedRes.data || []);
@@ -63,7 +64,7 @@ export function NewsPage() {
             limit: 6,
           });
           const filtered = (fallbackRes.data || [])
-            .filter((item) => Number(item.id) !== Number(articleId))
+            .filter((item) => Number(item.id) !== Number(articleData.id))
             .slice(0, 3);
           setRelatedNews(filtered);
         }
@@ -76,7 +77,7 @@ export function NewsPage() {
 
     fetchArticleData();
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [articleId, markArticleAsRead]);
+  }, [articleSlug, markArticleAsRead]);
 
   const handleShare = () => {
     const currentUrl = window.location.href;
@@ -140,7 +141,7 @@ export function NewsPage() {
               {/* Feature image cover with overlay category badge */}
               <div className="position-relative mb-4 overflow-hidden rounded-4 article-cover-wrapper">
                 <img
-                  src={article.image}
+                  src={article.image_url}
                   alt={article.title}
                   className="img-fluid w-100 object-fit-cover article-cover-img"
                 />
@@ -172,8 +173,12 @@ export function NewsPage() {
                   </div>
 
                   <div className="d-flex align-items-center gap-2">
+                    <Link to={`${article.news_url}`} target="_blank" rel="noopener noreferrer" className="btn btn-sm btn-outline-secondary rounded-pill d-inline-flex align-items-center gap-1">
+                      <IconLinkPlus size={16} />
+                      <span>Acessar fonte original</span>
+                    </Link>
                     <button
-                      onClick={() => toggleArticleBookmark(article.id)}
+                      onClick={() => navigate(`${article.news_url}`)}
                       className={`btn btn-sm ${isBookmarked ? 'btn-primary' : 'btn-outline-secondary'} rounded-pill d-inline-flex align-items-center gap-1`}
                       title={
                         isBookmarked ? 'Remover dos salvos' : 'Salvar notícia'
@@ -222,16 +227,16 @@ export function NewsPage() {
                   {relatedNews.map((item) => (
                     <a
                       key={item.id}
-                      href={`/news?id=${item.id}`}
+                      href={`/news/${item.slug}`}
                       onClick={(e) => {
                         e.preventDefault();
-                        navigate(`/news?id=${item.id}`);
+                        navigate(`/news/${item.slug}`);
                       }}
                       className="card border-0 shadow-sm rounded-3 overflow-hidden related-card text-decoration-none d-block"
                     >
                       <div className="card-body p-3 d-flex gap-3 align-items-center">
                         <img
-                          src={item.image}
+                          src={item.image_url}
                           alt={item.title}
                           className="rounded-3 object-fit-cover related-thumb"
                         />

@@ -59,4 +59,4 @@ const htmlContent = `<!DOCTYPE html>
 	</body>
 </html>`;
 
-export default indexRouter;
+export { indexRouter };

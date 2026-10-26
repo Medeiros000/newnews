@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   IconBookmark,
   IconBookmarkFilled,
@@ -50,90 +51,91 @@ export function NewsCard({
     : 'Salvar nos favoritos';
 
   return (
-    <article
-      id={`news-card-${article.id}`}
-      className={`card h-100 border news-card shadow-sm overflow-hidden ${
-        isRead ? 'news-card--read' : ''
-      }`}
-    >
-      <div className="news-card-img-wrapper overflow-hidden position-relative">
-        {/* Só mostra o botão se existir usuário logado */}
-        {user && (
-          <button
-            type="button"
-            className={`news-card-bookmark-btn ${
-              isBookmarked ? 'is-active' : ''
+    <>
+      <Link to={'/news/' + article.slug} rel="noopener noreferrer" className="text-decoration-none text-reset">
+        <article
+          id={`news-card-${article.id}`}
+          className={`card h-100 border news-card shadow-sm overflow-hidden ${isRead ? 'news-card--read' : ''
             }`}
-            onClick={handleBookmark}
-            aria-label={bookmarkLabel}
-            title={bookmarkLabel}
-          >
-            {isBookmarked ? (
-              <IconBookmarkFilled size={15} />
-            ) : (
-              <IconBookmark size={15} />
+        >
+          <div className="news-card-img-wrapper overflow-hidden position-relative">
+            {/* Só mostra o botão se existir usuário logado */}
+            {user && (
+              <button
+                type="button"
+                className={`news-card-bookmark-btn ${isBookmarked ? 'is-active' : ''
+                  }`}
+                onClick={handleBookmark}
+                aria-label={bookmarkLabel}
+                title={bookmarkLabel}
+              >
+                {isBookmarked ? (
+                  <IconBookmarkFilled size={15} />
+                ) : (
+                  <IconBookmark size={15} />
+                )}
+              </button>
             )}
-          </button>
-        )}
 
-        {imageError ? (
-          <div className="w-100 h-100 bg-secondary-subtle d-flex align-items-center justify-content-center text-muted">
-            <IconNews size={32} opacity={0.5} />
-          </div>
-        ) : (
-          <img
-            src={article.image}
-            alt={article.title}
-            className="news-card-img w-100 h-100 object-fit-cover"
-            loading="lazy"
-            onError={() => setImageError(true)}
-          />
-        )}
-      </div>
-
-      <div className="card-body d-flex flex-column pb-2">
-        <div className="d-flex align-items-center gap-2 mb-2">
-          <span
-            className={`badge text-bg-${
-              article.badgeBg || 'primary'
-            } align-self-start`}
-          >
-            {article.category}
-          </span>
-
-          {isRead && (
-            <span className="badge text-bg-secondary badge-read align-self-start">
-              ✓ Lido
-            </span>
-          )}
-        </div>
-
-        <h2 className="card-title news-card-title fw-bold mb-2">
-          <button
-            type="button"
-            className="btn btn-link p-0 text-start text-reset text-decoration-none fw-bold stretched-link w-100"
-            onClick={() => onSelectArticle?.(article)}
-          >
-            {article.title}
-          </button>
-        </h2>
-
-        <p className="card-text text-secondary news-card-summary mb-3">
-          {article.summary}
-        </p>
-
-        <div className="d-flex align-items-center justify-content-between mt-auto">
-          <div className="d-flex align-items-center gap-1 text-secondary news-card-time">
-            <IconClock size={13} />
-            <span>{article.publishedTimeAgo || 'Recente'}</span>
+            {imageError ? (
+              <div className="w-100 h-100 bg-secondary-subtle d-flex align-items-center justify-content-center text-muted">
+                <IconNews size={32} opacity={0.5} />
+              </div>
+            ) : (
+              <img
+                src={article.image_url}
+                alt={article.title}
+                className="news-card-img w-100 h-100 object-fit-cover"
+                loading="lazy"
+                onError={() => setImageError(true)}
+              />
+            )}
           </div>
 
-          <span className="btn btn-link btn-sm news-card-action p-0 pe-none">
-            Ler mais <IconChevronRight size={12} className="ms-1" />
-          </span>
-        </div>
-      </div>
-    </article>
+          <div className="card-body d-flex flex-column pb-2">
+            <div className="d-flex align-items-center gap-2 mb-2">
+              <span
+                className={`badge text-bg-${article.badgeBg || 'primary'
+                  } align-self-start`}
+              >
+                {article.category}
+              </span>
+
+              {isRead && (
+                <span className="badge text-bg-secondary badge-read align-self-start">
+                  ✓ Lido
+                </span>
+              )}
+            </div>
+
+            <h2 className="card-title news-card-title fw-bold mb-2">
+              <button
+                type="button"
+                className="btn btn-link p-0 text-start text-reset text-decoration-none fw-bold stretched-link w-100"
+                onClick={() => onSelectArticle?.(article)}
+              >
+                {article.title}
+              </button>
+            </h2>
+
+            <p className="card-text text-secondary news-card-summary mb-3">
+              {article.summary}
+            </p>
+
+            <div className="d-flex align-items-center justify-content-between mt-auto">
+              <div className="d-flex align-items-center gap-1 text-secondary news-card-time">
+                <IconClock size={13} />
+                <span>{article.publishedTimeAgo || 'Recente'}</span>
+              </div>
+
+              <span className="btn btn-link btn-sm news-card-action p-0 pe-none">
+                Ler mais <IconChevronRight size={12} className="ms-1" />
+              </span>
+            </div>
+          </div>
+        </article>
+      </Link>
+    </>
   );
 }
 
@@ -173,9 +175,8 @@ export function HeroCard({ article, onSelectArticle }) {
 
       <div className="hero-overlay position-absolute bottom-0 start-0 w-100 p-4 d-flex flex-column justify-content-end">
         <span
-          className={`badge text-bg-${
-            article.badgeBg || 'primary'
-          } align-self-start mb-2`}
+          className={`badge text-bg-${article.badgeBg || 'primary'
+            } align-self-start mb-2`}
         >
           {article.category}
         </span>

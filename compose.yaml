@@ -23,14 +23,16 @@ services:
       - ./backend:/app
       - /app/node_modules
     environment:
-      - DATABASE_URL=file:./dev.db
-      # - REDIS_URL=redis://redis:6379
-      - REDIS_URL=redis://host.docker.internal:6379
+      - DATABASE_URL=postgresql://newnews:newnews_dev@postgres:5432/newnews
+      - REDIS_URL=redis://redis:6379
       - PORT=3000
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
     restart: unless-stopped
 
   redis:
@@ -38,3 +40,23 @@ services:
     ports:
       - "6379:6379"
     restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: newnews
+      POSTGRES_USER: newnews
+      POSTGRES_PASSWORD: newnews_dev
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U newnews -d newnews"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

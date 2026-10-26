@@ -84,12 +84,13 @@ O backend busca notícias automaticamente da **[Currents API](https://currentsap
 ### Pipeline
 
 ```
-CurrentsApiClient → NewsNormalizer → NewsValidator → NewsDeduplicator → NewsRepository
+CurrentsApiClient → Category lookup → NewsNormalizer → NewsValidator → NewsDeduplicator → NewsRepository
 ```
 
 | Etapa                 | Responsabilidade                                              |
 | --------------------- | ------------------------------------------------------------- |
 | `CurrentsApiClient`   | Faz a requisição à API e retorna os artigos brutos            |
+| `Category lookup`     | Compara o primeiro item de `category` com `Category.name` ou com seus termos separados por `_`; sem categoria, usa `general` |
 | `NewsNormalizer`      | Transforma o formato da API no schema interno da aplicação    |
 | `NewsValidator`       | Descarta artigos inválidos ou incompletos                     |
 | `NewsDeduplicator`    | Filtra artigos já existentes no banco (1 única query em lote) |
@@ -113,7 +114,6 @@ Após cada ingestão bem-sucedida, o cache Redis das listagens (`news:list:*`) �
 | `PORT`                 | `3000`                       | Porta utilizada pela API                   |
 | `REDIS_URL`            | `redis://localhost:6379`     | URL de conexão com o Redis (cache)         |
 | `CURRENTS_API_KEY`     | `abc123...`                  | Chave de acesso à Currents API             |
-| `DEFAULT_CATEGORY_UUID`| *(opcional)*                 | UUID fixo de categoria para as notícias    |
 
 > O arquivo `.env` é necessário para executar comandos locais que dependem dessas variáveis.
 

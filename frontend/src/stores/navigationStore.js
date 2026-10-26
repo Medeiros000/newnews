@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { newsService } from '@/services';
+import { CategoryService } from '@/services';
+
 
 /**
  * Global navigation store (Zustand).
@@ -53,9 +54,11 @@ export const useNavigationStore = create((set, get) => ({
    */
   loadNavigation: async () => {
     try {
-      const res = await newsService.getCategories();
-      if (res.success && res.navItems) {
-        set({ navigationItems: res.navItems });
+      
+      const res = await CategoryService.getAllCategories();
+      
+      if (res.success && res.data) {
+        set({ navigationItems: res.data });
       }
     } catch (err) {
       console.error('Failed to load navigation items:', err);

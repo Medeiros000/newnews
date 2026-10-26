@@ -1,12 +1,14 @@
+import { slugify } from '../../utils/slugify.js';
 import { CurrentsArticle } from './CurrentsApiClient.js';
 
 export interface NormalizedNews {
-    category_id: string;
+    category?: string[];
     badge_bg: string;
     title: string;
-    summary: string;
+    slug: string;
     content: string;
     image_url: string;
+    news_url: string;
     published_at: Date;
     author: string;
     source: string;
@@ -26,13 +28,11 @@ export class NewsNormalizer {
         }
     }
 
-    normalize(raw: CurrentsArticle, category_id: string): NormalizedNews {
+    public normalize(raw: CurrentsArticle): NormalizedNews {
         // Título truncado a 255 chars
-        const rawTitle = raw.title || 'Notícia sem título';
+        const rawTitle = raw.title || raw.description?.slice(0, 60) || 'Notícia sem título';
         const title = rawTitle.slice(0, 255);
-
-        const rawSummary = raw.description || raw.summary || 'Sem resumo disponível.';
-        const summary = this.stripHtmlTags(rawSummary);
+        const slug = slugify(title);
 
         const rawContent = raw.content || raw.description || 'Conteúdo não informado.';
         const content = this.stripHtmlTags(rawContent);
@@ -51,14 +51,23 @@ export class NewsNormalizer {
 
         // Extrai o domínio real da URL em vez de usar o campo "language" como fallback
         const source = this.extractDomain(raw.url);
-
+        const category = Array.isArray(raw.category)
+            ? raw.category
+                .filter((value): value is string => typeof value === 'string')
+                .flatMap((value) => value.split(','))
+                .map((value) => value.trim())
+                .filter(Boolean)
+            : typeof raw.category === 'string'
+                ? raw.category.split(',').map((value) => value.trim()).filter(Boolean)
+                : undefined;
         return {
-            category_id,
+            ...(category && category.length > 0 ? { category } : {}),
             badge_bg: 'bg-blue-500',
             title,
-            summary,
+            slug,
             content,
             image_url,
+            news_url: raw.url || '',
             published_at,
             author: raw.author || 'Redação',
             source,
