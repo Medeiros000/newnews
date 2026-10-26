@@ -11,14 +11,14 @@ import { HealthRouter } from './routes/HealthRouter.js';
 import { UserRouter } from './routes/UserRouter.js';
 import { NewsRouter } from './routes/NewsRouter.js';
 import { CategoryRouter } from './routes/CategoryRouter.js';
-import { NewsIngestionPipeline } from './services/newsIngestion/NewsIngestionPipeline.js';
+import { IngestNewsCommand } from './commands/IngestNewsCommand.js';
 import cors from 'cors';
 
 const INGESTION_INTERVAL_MS = 60 * 60 * 1000; // 1 hora
 
 export class App {
     public readonly instance: Application;
-    private readonly pipeline: NewsIngestionPipeline;
+    private readonly ingestionCommand: IngestNewsCommand;
     private ingestionTimer?: ReturnType<typeof setInterval>;
     private readonly cors: any;
 
@@ -26,7 +26,7 @@ export class App {
         this.instance = express();
         this.cors = cors();
         this.instance.use(this.cors); // Habilita CORS para todas as rotas
-        this.pipeline = new NewsIngestionPipeline();
+        this.ingestionCommand = new IngestNewsCommand();
         this.setupMiddlewares();
         this.setupRoutes();
         this.setupErrorHandling();
@@ -74,7 +74,7 @@ export class App {
     private startIngestionScheduler(): void {
         const run = async () => {
             try {
-                await this.pipeline.execute();
+                await this.ingestionCommand.execute();
             } catch (error) {
                 console.error('❌ Erro no agendamento da ingestão:', error);
             }
