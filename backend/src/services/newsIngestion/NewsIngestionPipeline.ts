@@ -1,31 +1,28 @@
 import { CurrentsApiClient } from './CurrentsApiClient.js';
 import { NewsNormalizer } from './NewsNormalizer.js';
-import { NewsValidator } from './NewsValidator.js';
-import { NewsDeduplicator } from './NewsDeduplicator.js';
 import { NewsRepository } from './NewsRepository.js';
 import { PrismaService } from '../PrismaService.js';
 import { RedisService } from '../RedisService.js';
+import { ValidationHandler } from './handlers/ValidationHandler.js';
+import { DeduplicationHandler } from './handlers/DeduplicationHandler.js';
+import { PersistenceHandler } from './handlers/PersistenceHandler.js';
 
 export class NewsIngestionPipeline {
-    private readonly deduplicator: NewsDeduplicator;
     private readonly repository: NewsRepository;
     private readonly apiClient: CurrentsApiClient;
     private readonly normalizer: NewsNormalizer;
-    private readonly validator: NewsValidator;
 
     public constructor(
         private readonly prisma: PrismaService = PrismaService.getInstance(),
         private readonly redis: RedisService = RedisService.getInstance(),
     ) {
-        this.deduplicator = new NewsDeduplicator();
         this.repository = new NewsRepository();
         this.apiClient = new CurrentsApiClient();
         this.normalizer = new NewsNormalizer();
-        this.validator = new NewsValidator();
     }
 
-    public async execute() {
-        console.log('🔄 Iniciando ingestão de notícias (POO)...');
+    public async execute(): Promise<void> {
+        console.log('🔄 Iniciando ingestão de notícias (Chain of Responsibility)...');
 
         const rawArticles = await this.apiClient.fetchLatestNews();
         if (rawArticles.length === 0) {
@@ -33,39 +30,43 @@ export class NewsIngestionPipeline {
             return;
         }
 
-        // Processa todos os artigos retornados pela API (sem slice arbitrário)
-        const processedItems = [];
-        for (const raw of rawArticles) {
-            const normalized = this.normalizer.normalize(raw);
-            const validated = this.validator.validate(normalized);
-            if (validated) {
-                processedItems.push(validated);
-            }
+        // Etapa 1: normaliza todos os artigos brutos
+        const normalizedArticles = rawArticles.map((raw) => this.normalizer.normalize(raw));
+
+        // Etapa 2: pré-carrega títulos e slugs existentes em uma única query (otimização de lote)
+        const titles = normalizedArticles.map((a) => a.title);
+        const slugs = normalizedArticles.map((a) => a.slug);
+        const existingRecords = await this.prisma.news.findMany({
+            where: {
+                OR: [{ title: { in: titles } }, { slug: { in: slugs } }],
+            },
+            select: { title: true, slug: true },
+        });
+        const existingTitles = new Set(existingRecords.map((r) => r.title));
+        const existingSlugs = new Set(existingRecords.map((r) => r.slug));
+
+        // Etapa 3: monta a cadeia — Validação → Deduplicação → Persistência
+        const persistence = new PersistenceHandler();
+        const deduplication = new DeduplicationHandler(existingTitles, existingSlugs);
+        const validation = new ValidationHandler();
+
+        validation.setNext(deduplication).setNext(persistence);
+
+        // Etapa 4: cada artigo percorre a cadeia individualmente;
+        // cada handler decide continuar ou interromper o fluxo
+        for (const article of normalizedArticles) {
+            await validation.handle(article);
         }
 
-        // Remove duplicadas em lote (1 única query ao banco)
-        const uniqueItems = await this.deduplicator.filterDuplicates(processedItems);
+        const savedCount = persistence.getSavedCount();
 
-        // Salva com tolerância a falhas individuais (1 erro não cancela o lote todo)
-        let savedCount = 0;
-        for (const item of uniqueItems) {
-            try {
-                const saved = await this.repository.save(item);
-                console.log(`✅ Notícia salva! ID: ${saved.id} | "${item.title.slice(0, 60)}..."`);
-                savedCount++;
-            } catch (err: any) {
-                console.error(`❌ Erro ao salvar "${item.title.slice(0, 60)}": ${err.message}`);
-            }
-        }
-
-        // Invalida cache de listagem caso novas notícias tenham sido adicionadas
         if (savedCount > 0 && this.redis) {
             await this.redis.delByPattern('news:list:*');
             console.log('🧹 Cache de listagem de notícias invalidado com sucesso.');
         }
 
         console.log(
-            `✨ Ingestão finalizada! ${savedCount}/${uniqueItems.length} notícias únicas salvas.`,
+            `✨ Ingestão finalizada! ${savedCount} notícias salvas de ${rawArticles.length} recebidas.`,
         );
     }
 }

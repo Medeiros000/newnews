@@ -29,7 +29,7 @@ export class News {
         this.category_id = category_id;
         this.badge_bg = badge_bg;
         this.title = title;
-        this.slug = slugify(title);
+        this.slug = slug;
         this.content = content;
         this.image_url = image_url;
         this.news_url = news_url;

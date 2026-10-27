@@ -62,9 +62,6 @@ export class App {
             _next: NextFunction,
         ): void => {
             console.error(error);
-
-
-            console.error(error);
             response.status(500).json({ error: 'Internal server error' });
         };
 
