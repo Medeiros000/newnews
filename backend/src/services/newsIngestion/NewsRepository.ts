@@ -1,10 +1,13 @@
 import { PrismaService } from '../PrismaService.js';
 import { RedisService } from '../RedisService.js';
 import { NormalizedNews } from './NewsNormalizer.js';
+import { Logger } from '../../utils/Logger.js';
 
 export class NewsRepository {
+    private readonly logger = new Logger('NewsRepository');
     private readonly prisma: PrismaService;
     private readonly redis: RedisService;
+
     public constructor() {
         this.prisma = PrismaService.getInstance();
         this.redis = RedisService.getInstance();
@@ -65,12 +68,12 @@ export class NewsRepository {
         }
 
         if (matchingCategory) {
-            console.log(
-                `📂 Categoria "${categoryTexts?.join(', ')}" associada a "${matchingCategory.name}" (ID ${matchingCategory.id}).`,
+            this.logger.debug(
+                `Categoria "${categoryTexts?.join(', ')}" associada a "${matchingCategory.name}" (ID ${matchingCategory.id}).`,
             );
         } else {
-            console.warn(
-                `⚠️ Nenhuma categoria da API correspondeu a "${categoryTexts?.join(', ') || 'nenhuma'}"; usando "${resolvedCategory.name}" (ID ${resolvedCategory.id}).`,
+            this.logger.warn(
+                `Nenhuma categoria da API correspondeu a "${categoryTexts?.join(', ') || 'nenhuma'}"; usando fallback "${resolvedCategory.name}" (ID ${resolvedCategory.id}).`,
             );
         }
 
@@ -99,8 +102,9 @@ export class NewsRepository {
         const textTerms = normalizedText.split(' ');
         const nameTerms = normalizedName.split(' ');
         const labelTerms = normalizedLabel.split(' ');
-        const hasExactTerm = nameTerms.some((term) => textTerms.includes(term))
-            || labelTerms.some((term) => textTerms.includes(term));
+        const hasExactTerm =
+            nameTerms.some((term) => textTerms.includes(term)) ||
+            labelTerms.some((term) => textTerms.includes(term));
 
         if (hasExactTerm) {
             return 80;

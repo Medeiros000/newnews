@@ -12,11 +12,13 @@ import { UserRouter } from './routes/UserRouter.js';
 import { NewsRouter } from './routes/NewsRouter.js';
 import { CategoryRouter } from './routes/CategoryRouter.js';
 import { IngestNewsCommand } from './commands/IngestNewsCommand.js';
+import { Logger } from './utils/Logger.js';
 import cors from 'cors';
 
-const INGESTION_INTERVAL_MS = 60 * 60 * 1000; // 1 hora
+const INGESTION_INTERVAL_MS = 60 * 60 * 1000;
 
 export class App {
+    private readonly logger = new Logger('App');
     public readonly instance: Application;
     private readonly ingestionCommand: IngestNewsCommand;
     private ingestionTimer?: ReturnType<typeof setInterval>;
@@ -25,7 +27,7 @@ export class App {
     constructor() {
         this.instance = express();
         this.cors = cors();
-        this.instance.use(this.cors); // Habilita CORS para todas as rotas
+        this.instance.use(this.cors);
         this.ingestionCommand = new IngestNewsCommand();
         this.setupMiddlewares();
         this.setupRoutes();
@@ -61,7 +63,7 @@ export class App {
             response: Response,
             _next: NextFunction,
         ): void => {
-            console.error(error);
+            this.logger.error('Erro interno na requisição:', error);
             response.status(500).json({ error: 'Internal server error' });
         };
 
@@ -73,15 +75,14 @@ export class App {
             try {
                 await this.ingestionCommand.execute();
             } catch (error) {
-                console.error('❌ Erro no agendamento da ingestão:', error);
+                this.logger.error('Erro no agendamento da ingestão:', error);
             }
         };
 
-        // Executa imediatamente ao iniciar e depois a cada hora
         run();
         this.ingestionTimer = setInterval(run, INGESTION_INTERVAL_MS);
-        console.log(
-            `⏱️  Ingestão de notícias agendada para rodar a cada ${INGESTION_INTERVAL_MS / 60_000} minutos.`,
+        this.logger.info(
+            `Ingestão de notícias agendada para rodar a cada ${INGESTION_INTERVAL_MS / 60_000} minutos.`,
         );
     }
 

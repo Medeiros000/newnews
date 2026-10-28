@@ -1,25 +1,27 @@
-import type { NormalizedNews } from '../NewsNormalizer.js';
+import { CurrentsArticle } from '../CurrentsApiClient.js';
+import { NormalizedNews } from '../NewsNormalizer.js';
 
-export interface INewsHandler {
-    setNext(handler: INewsHandler): INewsHandler;
-    handle(news: NormalizedNews): Promise<NormalizedNews | null>;
+export interface INewsHandler<TIn = NormalizedNews, TOut = NormalizedNews> {
+    setNext<TNextOut>(handler: INewsHandler<TOut, TNextOut>): INewsHandler<TOut, TNextOut>;
+    handle(input: TIn): Promise<TOut | null>;
 }
 
-export abstract class AbstractNewsHandler implements INewsHandler {
-    private next?: INewsHandler;
+export abstract class AbstractNewsHandler<TIn = NormalizedNews, TOut = NormalizedNews>
+    implements INewsHandler<TIn, TOut>
+{
+    private next?: INewsHandler<TOut, any>;
 
-    public setNext(handler: INewsHandler): INewsHandler {
+    public setNext<TNextOut>(handler: INewsHandler<TOut, TNextOut>): INewsHandler<TOut, TNextOut> {
         this.next = handler;
         return handler;
     }
 
-    protected async passToNext(news: NormalizedNews): Promise<NormalizedNews | null> {
+    protected async passToNext(output: TOut): Promise<any | null> {
         if (this.next) {
-            return this.next.handle(news);
+            return this.next.handle(output);
         }
-        return news;
+        return output;
     }
 
-    public abstract handle(news: NormalizedNews): Promise<NormalizedNews | null>;
+    public abstract handle(input: TIn): Promise<TOut | null>;
 }
-

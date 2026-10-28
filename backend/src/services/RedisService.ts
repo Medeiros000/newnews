@@ -1,8 +1,10 @@
 import { Redis, type RedisOptions } from 'ioredis';
 import { env } from '../config/env.js';
+import { Logger } from '../utils/Logger.js';
 
 export class RedisService {
     private static instance: RedisService | undefined;
+    private readonly logger = new Logger('RedisService');
     private readonly client: Redis;
 
     private constructor(
@@ -16,8 +18,8 @@ export class RedisService {
             ...options,
         });
 
-        this.client.on('error', (_error: Error) => {
-            // Suppress unhandled errors so process won't crash if Redis is unavailable
+        this.client.on('error', (error: Error) => {
+            this.logger.warn(`Conexão com Redis indisponível: ${error.message}`);
         });
     }
 
@@ -42,8 +44,8 @@ export class RedisService {
     public async set(key: string, value: unknown, ttlSeconds: number = 300): Promise<void> {
         try {
             await this.client.set(key, JSON.stringify(value), 'EX', ttlSeconds);
-        } catch {
-            // Cache failures are non-blocking
+        } catch (error: any) {
+            this.logger.debug(`Falha não bloqueante ao salvar no Redis (${key}):`, error?.message);
         }
     }
 
@@ -53,8 +55,8 @@ export class RedisService {
             if (keys.length > 0) {
                 await this.client.del(...keys);
             }
-        } catch {
-            // Cache failures are non-blocking
+        } catch (error: any) {
+            this.logger.debug('Falha não bloqueante ao deletar chaves no Redis:', error?.message);
         }
     }
 
@@ -64,16 +66,16 @@ export class RedisService {
             if (keys.length > 0) {
                 await this.client.del(...keys);
             }
-        } catch {
-            // Cache failures are non-blocking
+        } catch (error: any) {
+            this.logger.debug(`Falha não bloqueante ao deletar por padrão (${pattern}) no Redis:`, error?.message);
         }
     }
 
     public async disconnect(): Promise<void> {
         try {
             await this.client.quit();
-        } catch {
-            // Cache failures are non-blocking
+        } catch (error: any) {
+            this.logger.debug('Falha ao desconectar do Redis:', error?.message);
         }
     }
 }

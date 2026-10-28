@@ -1,72 +1,59 @@
-import { CurrentsApiClient } from './CurrentsApiClient.js';
-import { NewsNormalizer } from './NewsNormalizer.js';
-import { NewsRepository } from './NewsRepository.js';
-import { PrismaService } from '../PrismaService.js';
-import { RedisService } from '../RedisService.js';
+import { FetchNewsHandler } from './handlers/FetchNewsHandler.js';
+import { NormalizationHandler } from './handlers/NormalizationHandler.js';
 import { ValidationHandler } from './handlers/ValidationHandler.js';
 import { DeduplicationHandler } from './handlers/DeduplicationHandler.js';
-import { PersistenceHandler } from './handlers/PersistenceHandler.js';
+import { NewsInsertionHandler } from './handlers/NewsInsertionHandler.js';
+import { CacheEvictionHandler } from './handlers/CacheEvictionHandler.js';
+import { Logger } from '../../utils/Logger.js';
 
 export class NewsIngestionPipeline {
-    private readonly repository: NewsRepository;
-    private readonly apiClient: CurrentsApiClient;
-    private readonly normalizer: NewsNormalizer;
+    private readonly logger = new Logger('NewsIngestionPipeline');
+    private readonly fetchHandler: FetchNewsHandler;
+    private readonly normalizerHandler: NormalizationHandler;
+    private readonly validatorHandler: ValidationHandler;
+    private readonly deduplicatorHandler: DeduplicationHandler;
+    private readonly insertionHandler: NewsInsertionHandler;
+    private readonly cacheEvictionHandler: CacheEvictionHandler;
 
     public constructor(
-        private readonly prisma: PrismaService = PrismaService.getInstance(),
-        private readonly redis: RedisService = RedisService.getInstance(),
+        fetchHandler: FetchNewsHandler = new FetchNewsHandler(),
+        cacheEvictionHandler: CacheEvictionHandler = new CacheEvictionHandler(),
     ) {
-        this.repository = new NewsRepository();
-        this.apiClient = new CurrentsApiClient();
-        this.normalizer = new NewsNormalizer();
+        this.fetchHandler = fetchHandler;
+        this.cacheEvictionHandler = cacheEvictionHandler;
+        this.normalizerHandler = new NormalizationHandler();
+        this.validatorHandler = new ValidationHandler();
+        this.deduplicatorHandler = new DeduplicationHandler();
+        this.insertionHandler = new NewsInsertionHandler();
+
+        this.setupChain();
+    }
+
+    private setupChain(): void {
+        this.normalizerHandler
+            .setNext(this.validatorHandler)
+            .setNext(this.deduplicatorHandler)
+            .setNext(this.insertionHandler);
     }
 
     public async execute(): Promise<void> {
-        console.log('🔄 Iniciando ingestão de notícias (Chain of Responsibility)...');
+        this.logger.info('Iniciando pipeline de ingestão de notícias...');
 
-        const rawArticles = await this.apiClient.fetchLatestNews();
-        if (rawArticles.length === 0) {
-            console.log('⚠️ Nenhuma notícia obtida da API.');
+        const rawArticles = await this.fetchHandler.handle();
+        if (!rawArticles || rawArticles.length === 0) {
             return;
         }
 
-        // Etapa 1: normaliza todos os artigos brutos
-        const normalizedArticles = rawArticles.map((raw) => this.normalizer.normalize(raw));
-
-        // Etapa 2: pré-carrega títulos e slugs existentes em uma única query (otimização de lote)
-        const titles = normalizedArticles.map((a) => a.title);
-        const slugs = normalizedArticles.map((a) => a.slug);
-        const existingRecords = await this.prisma.news.findMany({
-            where: {
-                OR: [{ title: { in: titles } }, { slug: { in: slugs } }],
-            },
-            select: { title: true, slug: true },
-        });
-        const existingTitles = new Set(existingRecords.map((r) => r.title));
-        const existingSlugs = new Set(existingRecords.map((r) => r.slug));
-
-        // Etapa 3: monta a cadeia — Validação → Deduplicação → Persistência
-        const persistence = new PersistenceHandler();
-        const deduplication = new DeduplicationHandler(existingTitles, existingSlugs);
-        const validation = new ValidationHandler();
-
-        validation.setNext(deduplication).setNext(persistence);
-
-        // Etapa 4: cada artigo percorre a cadeia individualmente;
-        // cada handler decide continuar ou interromper o fluxo
-        for (const article of normalizedArticles) {
-            await validation.handle(article);
+        for (const raw of rawArticles) {
+            await this.normalizerHandler.handle(raw);
         }
 
-        const savedCount = persistence.getSavedCount();
+        const savedCount = this.insertionHandler.getInsertedCount();
 
-        if (savedCount > 0 && this.redis) {
-            await this.redis.delByPattern('news:list:*');
-            console.log('🧹 Cache de listagem de notícias invalidado com sucesso.');
+        if (savedCount > 0) {
+            await this.cacheEvictionHandler.invalidateCache();
         }
 
-        console.log(
-            `✨ Ingestão finalizada! ${savedCount} notícias salvas de ${rawArticles.length} recebidas.`,
-        );
+        this.logger.info(`Ingestão concluída. ${savedCount} notícias salvas de ${rawArticles.length} recebidas.`);
     }
 }
