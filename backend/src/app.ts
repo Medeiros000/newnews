@@ -11,28 +11,21 @@ import { HealthRouter } from './routes/HealthRouter.js';
 import { UserRouter } from './routes/UserRouter.js';
 import { NewsRouter } from './routes/NewsRouter.js';
 import { CategoryRouter } from './routes/CategoryRouter.js';
-import { IngestNewsCommand } from './commands/IngestNewsCommand.js';
 import { Logger } from './utils/Logger.js';
 import cors from 'cors';
-
-const INGESTION_INTERVAL_MS = 60 * 60 * 1000;
 
 export class App {
     private readonly logger = new Logger('App');
     public readonly instance: Application;
-    private readonly ingestionCommand: IngestNewsCommand;
-    private ingestionTimer?: ReturnType<typeof setInterval>;
     private readonly cors: any;
 
     constructor() {
         this.instance = express();
         this.cors = cors();
         this.instance.use(this.cors);
-        this.ingestionCommand = new IngestNewsCommand();
         this.setupMiddlewares();
         this.setupRoutes();
         this.setupErrorHandling();
-        this.startIngestionScheduler();
     }
 
     private setupMiddlewares(): void {
@@ -68,28 +61,6 @@ export class App {
         };
 
         this.instance.use(errorHandler);
-    }
-
-    private startIngestionScheduler(): void {
-        const run = async () => {
-            try {
-                await this.ingestionCommand.execute();
-            } catch (error) {
-                this.logger.error('Erro no agendamento da ingestão:', error);
-            }
-        };
-
-        run();
-        this.ingestionTimer = setInterval(run, INGESTION_INTERVAL_MS);
-        this.logger.info(
-            `Ingestão de notícias agendada para rodar a cada ${INGESTION_INTERVAL_MS / 60_000} minutos.`,
-        );
-    }
-
-    public stopIngestionScheduler(): void {
-        if (this.ingestionTimer) {
-            clearInterval(this.ingestionTimer);
-        }
     }
 
     public listen(port: number | string, callback?: () => void): Server {
