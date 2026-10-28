@@ -1,71 +1,59 @@
-import { CurrentsApiClient } from './CurrentsApiClient.js';
-import { NewsNormalizer } from './NewsNormalizer.js';
-import { NewsValidator } from './NewsValidator.js';
-import { NewsDeduplicator } from './NewsDeduplicator.js';
-import { NewsRepository } from './NewsRepository.js';
-import { PrismaService } from '../PrismaService.js';
-import { RedisService } from '../RedisService.js';
+import { FetchNewsHandler } from './handlers/FetchNewsHandler.js';
+import { NormalizationHandler } from './handlers/NormalizationHandler.js';
+import { ValidationHandler } from './handlers/ValidationHandler.js';
+import { DeduplicationHandler } from './handlers/DeduplicationHandler.js';
+import { NewsInsertionHandler } from './handlers/NewsInsertionHandler.js';
+import { CacheEvictionHandler } from './handlers/CacheEvictionHandler.js';
+import { Logger } from '../../utils/Logger.js';
 
 export class NewsIngestionPipeline {
-    private readonly deduplicator: NewsDeduplicator;
-    private readonly repository: NewsRepository;
-    private readonly apiClient: CurrentsApiClient;
-    private readonly normalizer: NewsNormalizer;
-    private readonly validator: NewsValidator;
+    private readonly logger = new Logger('NewsIngestionPipeline');
+    private readonly fetchHandler: FetchNewsHandler;
+    private readonly normalizerHandler: NormalizationHandler;
+    private readonly validatorHandler: ValidationHandler;
+    private readonly deduplicatorHandler: DeduplicationHandler;
+    private readonly insertionHandler: NewsInsertionHandler;
+    private readonly cacheEvictionHandler: CacheEvictionHandler;
 
     public constructor(
-        private readonly prisma: PrismaService = PrismaService.getInstance(),
-        private readonly redis: RedisService = RedisService.getInstance(),
+        fetchHandler: FetchNewsHandler = new FetchNewsHandler(),
+        cacheEvictionHandler: CacheEvictionHandler = new CacheEvictionHandler(),
     ) {
-        this.deduplicator = new NewsDeduplicator();
-        this.repository = new NewsRepository();
-        this.apiClient = new CurrentsApiClient();
-        this.normalizer = new NewsNormalizer();
-        this.validator = new NewsValidator();
+        this.fetchHandler = fetchHandler;
+        this.cacheEvictionHandler = cacheEvictionHandler;
+        this.normalizerHandler = new NormalizationHandler();
+        this.validatorHandler = new ValidationHandler();
+        this.deduplicatorHandler = new DeduplicationHandler();
+        this.insertionHandler = new NewsInsertionHandler();
+
+        this.setupChain();
     }
 
-    public async execute() {
-        console.log('🔄 Iniciando ingestão de notícias (POO)...');
+    private setupChain(): void {
+        this.normalizerHandler
+            .setNext(this.validatorHandler)
+            .setNext(this.deduplicatorHandler)
+            .setNext(this.insertionHandler);
+    }
 
-        const rawArticles = await this.apiClient.fetchLatestNews();
-        if (rawArticles.length === 0) {
-            console.log('⚠️ Nenhuma notícia obtida da API.');
+    public async execute(): Promise<void> {
+        this.logger.info('Iniciando pipeline de ingestão de notícias...');
+
+        const rawArticles = await this.fetchHandler.handle();
+        if (!rawArticles || rawArticles.length === 0) {
             return;
         }
 
-        // Processa todos os artigos retornados pela API (sem slice arbitrário)
-        const processedItems = [];
         for (const raw of rawArticles) {
-            const normalized = this.normalizer.normalize(raw);
-            const validated = this.validator.validate(normalized);
-            if (validated) {
-                processedItems.push(validated);
-            }
+            await this.normalizerHandler.handle(raw);
         }
 
-        // Remove duplicadas em lote (1 única query ao banco)
-        const uniqueItems = await this.deduplicator.filterDuplicates(processedItems);
+        const savedCount = this.insertionHandler.getInsertedCount();
 
-        // Salva com tolerância a falhas individuais (1 erro não cancela o lote todo)
-        let savedCount = 0;
-        for (const item of uniqueItems) {
-            try {
-                const saved = await this.repository.save(item);
-                console.log(`✅ Notícia salva! ID: ${saved.id} | "${item.title.slice(0, 60)}..."`);
-                savedCount++;
-            } catch (err: any) {
-                console.error(`❌ Erro ao salvar "${item.title.slice(0, 60)}": ${err.message}`);
-            }
+        if (savedCount > 0) {
+            await this.cacheEvictionHandler.invalidateCache();
         }
 
-        // Invalida cache de listagem caso novas notícias tenham sido adicionadas
-        if (savedCount > 0 && this.redis) {
-            await this.redis.delByPattern('news:list:*');
-            console.log('🧹 Cache de listagem de notícias invalidado com sucesso.');
-        }
-
-        console.log(
-            `✨ Ingestão finalizada! ${savedCount}/${uniqueItems.length} notícias únicas salvas.`,
-        );
+        this.logger.info(`Ingestão concluída. ${savedCount} notícias salvas de ${rawArticles.length} recebidas.`);
     }
 }

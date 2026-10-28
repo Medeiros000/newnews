@@ -1,4 +1,5 @@
 import { env } from '../../config/env.js';
+import { Logger } from '../../utils/Logger.js';
 
 export interface CurrentsArticle {
     id?: string;
@@ -16,41 +17,38 @@ export interface CurrentsArticle {
 }
 
 export class CurrentsApiClient {
-    private apiKey: string;
-    private baseUrl: string;
+    private readonly logger = new Logger('CurrentsApiClient');
+    private readonly apiKey: string;
+    private readonly baseUrl: string;
 
     public constructor() {
         this.apiKey = env.CURRENTS_API_KEY || '';
         this.baseUrl = env.CURRENTS_API_BASE_URL || '';
         if (!this.apiKey) {
-            console.warn('⚠️ AVISO: CURRENTS_API_KEY não está configurada no ambiente.');
+            this.logger.warn('CURRENTS_API_KEY não está configurada no ambiente.');
         }
     }
 
     public async fetchLatestNews(): Promise<CurrentsArticle[]> {
         try {
             const url = `${this.baseUrl}?language=pt&apiKey=${this.apiKey}`;
-            console.log(`🔗 Requisição para Currents API: ${url}`);
+            this.logger.debug(`Requisição para Currents API: ${url}`);
             const response = await fetch(url, {
                 signal: AbortSignal.timeout(8000),
             });
 
             if (response.status === 401) {
-                console.error(
-                    '❌ Erro 401: Unauthorized - Chave da Currents API inválida ou expirada.',
-                );
+                this.logger.error('Erro 401: Unauthorized - Chave da Currents API inválida ou expirada.');
                 return [];
             }
 
             if (response.status === 429) {
-                console.error('❌ Erro 429: Too Many Requests - Cota da Currents API esgotada.');
+                this.logger.error('Erro 429: Too Many Requests - Cota da Currents API esgotada.');
                 return [];
             }
 
             if (!response.ok) {
-                console.error(
-                    `❌ Erro HTTP na Currents API: ${response.status} ${response.statusText}`,
-                );
+                this.logger.error(`Erro HTTP na Currents API: ${response.status} ${response.statusText}`);
                 return [];
             }
 
@@ -58,9 +56,9 @@ export class CurrentsApiClient {
             return data.news || [];
         } catch (error: any) {
             if (error.name === 'AbortError' || error.name === 'TimeoutError') {
-                console.error('❌ Timeout: A Currents API demorou mais de 8s para responder.');
+                this.logger.error('Timeout: A Currents API demorou mais de 8s para responder.');
             } else {
-                console.error('❌ Erro ao conectar com a Currents API:', error.message);
+                this.logger.error('Erro ao conectar com a Currents API:', error?.message || error);
             }
             return [];
         }

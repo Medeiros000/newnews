@@ -47,3 +47,17 @@ model News {
 
     @@map("news")
 }
+
+model Log {
+    id         String   @id @default(uuid())
+    level      String
+    context    String
+    message    String
+    metadata   String?
+    created_at DateTime @default(now())
+
+    @@index([level])
+    @@index([context])
+    @@index([created_at])
+    @@map("logs")
+}
