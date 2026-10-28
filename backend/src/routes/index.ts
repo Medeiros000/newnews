@@ -3,7 +3,7 @@ import { Router } from 'express';
 const indexRouter = Router();
 
 indexRouter.get('/', (_req, res) => {
-    res.type('html').send(htmlContent);
+  res.type('html').send(htmlContent);
 });
 
 const htmlContent = `<!DOCTYPE html>

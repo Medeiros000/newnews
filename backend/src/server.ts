@@ -11,20 +11,20 @@ const app = new App();
 const newsScheduler = new NewsSchedulerHandler();
 
 const server: Server = app.listen(env.PORT, () => {
-    logger.info(`Servidor API escutando em http://localhost:${env.PORT}`);
+  logger.info(`Servidor API escutando em http://localhost:${env.PORT}`);
 });
 
 const shutdown = (signal: 'SIGINT' | 'SIGTERM'): void => {
-    logger.info(`Sinal recebido: ${signal}. Encerrando aplicação...`);
-    newsScheduler.stop();
-    server.close(async (error?: Error) => {
-        if (error) {
-            logger.error('Erro ao fechar o servidor HTTP:', error);
-            process.exit(1);
-        }
-        logger.info('Servidor HTTP encerrado.');
-        process.exit(0);
-    });
+  logger.info(`Sinal recebido: ${signal}. Encerrando aplicação...`);
+  newsScheduler.stop();
+  server.close(async (error?: Error) => {
+    if (error) {
+      logger.error('Erro ao fechar o servidor HTTP:', error);
+      process.exit(1);
+    }
+    logger.info('Servidor HTTP encerrado.');
+    process.exit(0);
+  });
 };
 
 process.once('SIGINT', () => shutdown('SIGINT'));
