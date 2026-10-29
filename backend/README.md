@@ -50,30 +50,30 @@ http://localhost:3000
 
 ## 🧰 Scripts
 
-| Script                | O que faz                                   |
-| --------------------- | ------------------------------------------- |
-| `npm run dev`         | Inicia o servidor de desenvolvimento        |
-| `npm run build`       | Compila o projeto para produção             |
-| `npm start`           | Executa o projeto compilado                 |
-| `npm run db:generate` | Gera o Prisma Client                        |
-| `npm run db:migrate`  | Cria e aplica migrations                    |
-| `npm run db:studio`   | Abre o Prisma Studio                        |
+| Script                | O que faz                            |
+| --------------------- | ------------------------------------ |
+| `npm run dev`         | Inicia o servidor de desenvolvimento |
+| `npm run build`       | Compila o projeto para produção      |
+| `npm start`           | Executa o projeto compilado          |
+| `npm run db:generate` | Gera o Prisma Client                 |
+| `npm run db:migrate`  | Cria e aplica migrations             |
+| `npm run db:studio`   | Abre o Prisma Studio                 |
 
 ---
 
 ## 🛠️ Stack
 
-| Responsabilidade    | Tecnologia      |
-| ------------------- | --------------- |
-| Runtime             | Node.js 20+     |
-| Framework HTTP      | Express 5       |
-| Linguagem           | TypeScript      |
-| ORM                 | Prisma          |
-| Banco de dados      | SQLite          |
-| Cache               | Redis (ioredis) |
-| Validação           | Zod             |
-| Fonte de notícias   | Currents API    |
-| Containerização     | Docker          |
+| Responsabilidade  | Tecnologia      |
+| ----------------- | --------------- |
+| Runtime           | Node.js 24+     |
+| Framework HTTP    | Express 5       |
+| Linguagem         | TypeScript      |
+| ORM               | Prisma          |
+| Banco de dados    | SQLite          |
+| Cache             | Redis (ioredis) |
+| Validação         | Zod             |
+| Fonte de notícias | Currents API    |
+| Containerização   | Docker          |
 
 ---
 
@@ -87,33 +87,33 @@ O backend busca notícias automaticamente da **[Currents API](https://currentsap
 CurrentsApiClient → Category lookup → NewsNormalizer → NewsValidator → NewsDeduplicator → NewsRepository
 ```
 
-| Etapa                 | Responsabilidade                                              |
-| --------------------- | ------------------------------------------------------------- |
-| `CurrentsApiClient`   | Faz a requisição à API e retorna os artigos brutos            |
-| `Category lookup`     | Compara o primeiro item de `category` com `Category.name` ou com seus termos separados por `_`; sem categoria, usa `general` |
-| `NewsNormalizer`      | Transforma o formato da API no schema interno da aplicação    |
-| `NewsValidator`       | Descarta artigos inválidos ou incompletos                     |
-| `NewsDeduplicator`    | Filtra artigos já existentes no banco (1 única query em lote) |
-| `NewsRepository`      | Persiste os artigos novos e invalida o cache de listagem      |
+| Etapa               | Responsabilidade                                                                                                             |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `CurrentsApiClient` | Faz a requisição à API e retorna os artigos brutos                                                                           |
+| `Category lookup`   | Compara o primeiro item de `category` com `Category.name` ou com seus termos separados por `_`; sem categoria, usa `general` |
+| `NewsNormalizer`    | Transforma o formato da API no schema interno da aplicação                                                                   |
+| `NewsValidator`     | Descarta artigos inválidos ou incompletos                                                                                    |
+| `NewsDeduplicator`  | Filtra artigos já existentes no banco (1 única query em lote)                                                                |
+| `NewsRepository`    | Persiste os artigos novos e invalida o cache de listagem                                                                     |
 
 Após cada ingestão bem-sucedida, o cache Redis das listagens (`news:list:*`) é invalidado automaticamente.
 
 ### Variável de ambiente obrigatória
 
-| Variável           | Descrição                        |
-| ------------------ | -------------------------------- |
-| `CURRENTS_API_KEY` | Chave de acesso à Currents API   |
+| Variável           | Descrição                      |
+| ------------------ | ------------------------------ |
+| `CURRENTS_API_KEY` | Chave de acesso à Currents API |
 
 ---
 
 ## ⚙️ Variáveis de Ambiente
 
-| Variável               | Exemplo                      | Descrição                                  |
-| ---------------------- | ---------------------------- | ------------------------------------------ |
-| `DATABASE_URL`         | `file:./dev.db`              | URL de conexão com o banco SQLite          |
-| `PORT`                 | `3000`                       | Porta utilizada pela API                   |
-| `REDIS_URL`            | `redis://localhost:6379`     | URL de conexão com o Redis (cache)         |
-| `CURRENTS_API_KEY`     | `abc123...`                  | Chave de acesso à Currents API             |
+| Variável           | Exemplo                               | Descrição                           |
+| ------------------ | ------------------------------------- | ----------------------------------- |
+| `DATABASE_URL`     | `postgresql://user:pass@localhost/db` | URL de conexão com o banco Postgres |
+| `PORT`             | `3000`                                | Porta utilizada pela API            |
+| `REDIS_URL`        | `redis://localhost:6379`              | URL de conexão com o Redis (cache)  |
+| `CURRENTS_API_KEY` | `abc123...`                           | Chave de acesso à Currents API      |
 
 > O arquivo `.env` é necessário para executar comandos locais que dependem dessas variáveis.
 
@@ -143,22 +143,23 @@ Verifica se a API está ativa.
 
 ### Notícias
 
-| Método | Rota                     | Descrição                                        |
-| ------ | ------------------------ | ------------------------------------------------ |
-| `GET`  | `/api/news`              | Lista notícias com paginação e busca por texto   |
-| `GET`  | `/api/news/:id`          | Retorna uma notícia pelo ID                      |
-| `GET`  | `/api/news/:id/related`  | Retorna notícias relacionadas (mesma categoria)  |
+| Método | Rota                    | Descrição                                       |
+| ------ | ----------------------- | ----------------------------------------------- |
+| `GET`  | `/api/news`             | Lista notícias com paginação e busca por texto  |
+| `GET`  | `/api/news/pt-br/:slug` | Retorna uma notícia pelo slug (português)       |
+| `GET`  | `/api/news/:id`         | Retorna uma notícia pelo ID                     |
+| `GET`  | `/api/news/:id/related` | Retorna notícias relacionadas (mesma categoria) |
 
 #### `GET /api/news`
 
 **Query params:**
 
-| Parâmetro | Tipo     | Padrão | Descrição                                          |
-| --------- | -------- | ------ | -------------------------------------------------- |
-| `query`   | `string` | —      | Texto para busca em título, resumo e conteúdo      |
-| `q`       | `string` | —      | Alias de `query`                                   |
-| `page`    | `number` | `1`    | Página (mínimo 1)                                  |
-| `limit`   | `number` | `10`   | Itens por página (máximo 100)                      |
+| Parâmetro | Tipo     | Padrão | Descrição                                     |
+| --------- | -------- | ------ | --------------------------------------------- |
+| `query`   | `string` | —      | Texto para busca em título, resumo e conteúdo |
+| `q`       | `string` | —      | Alias de `query`                              |
+| `page`    | `number` | `1`    | Página (mínimo 1)                             |
+| `limit`   | `number` | `10`   | Itens por página (máximo 100)                 |
 
 **Resposta `200 OK`:**
 
