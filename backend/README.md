@@ -1,41 +1,62 @@
 # Backend — New News
 
-API backend do New News, construída com **Node.js + Express + TypeScript + Prisma + SQLite + Redis + Zod**.
+API REST corporativa do New News construída com **Node.js + Express 5 + TypeScript + Prisma ORM + PostgreSQL + Redis + Zod**.
 
-As notícias exibidas no app são obtidas automaticamente da **[Currents API](https://currentsapi.services/)** e armazenadas localmente no banco de dados.
+As notícias exibidas na plataforma são consumidas automaticamente da **[Currents API](https://currentsapi.services/)**, processadas e tratadas via **Chain of Responsibility**, validadas com Zod e persistidas no PostgreSQL com camada de cache inteligente no Redis.
 
 ---
 
 ## 🚀 Primeiros Passos
 
-Na pasta `backend/`, instale as dependências:
+### 1. Instalação de Dependências
+
+Acesse a pasta `backend/` e instale os pacotes:
 
 ```bash
 npm install
 ```
 
+### 2. Configuração de Ambiente
+
 Crie o arquivo `.env` com base no `.env.example`:
 
 ```env
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="postgresql://newnews:newnews_dev@localhost:5432/newnews"
 PORT=3000
 REDIS_URL="redis://localhost:6379"
 CURRENTS_API_KEY="sua_chave_aqui"
+CURRENTS_API_BASE_URL="https://api.currentsapi.services/v1/latest-news"
+DEVELOPMENT_MODE=true
 ```
 
-> Obtenha uma chave gratuita em [currentsapi.services](https://currentsapi.services/).
+> Obtenha sua chave de API gratuita em [currentsapi.services](https://currentsapi.services/).
 
-Gere o Prisma Client e aplique as migrations:
+### 3. Banco de Dados e Migrations
+
+Com os contêineres Docker ativos (`docker compose up -d`), gere o Prisma Client e execute as migrations:
 
 ```bash
 npm run db:generate
 npm run db:migrate
 ```
 
-Inicie o servidor:
+Para popular categorias e registros de teste:
 
 ```bash
+npm run db:seed
+```
+
+### 4. Executando a Aplicação
+
+```bash
+# Modo desenvolvimento (com hot-reload via tsx)
 npm run dev
+
+# Compilação TypeScript para produção
+npm run build
+
+# Execução do bundle gerado em produção
+npm start
 ```
 
 A API estará disponível em:
@@ -44,276 +65,308 @@ A API estará disponível em:
 http://localhost:3000
 ```
 
-> **Banco de dados:** o SQLite será criado em `dev.db`.
+---
+
+## 🧰 Scripts Disponíveis
+
+| Comando               | Descrição                                                    |
+| --------------------- | ------------------------------------------------------------ |
+| `npm run dev`         | Inicia o servidor com hot-reload (`tsx watch src/server.ts`) |
+| `npm run build`       | Compila o código TypeScript para a pasta `dist/`             |
+| `npm start`           | Executa a versão compilada (`node dist/src/server.js`)       |
+| `npm run lint`        | Executa a análise estática ultrarrápida com `oxlint`         |
+| `npm run format`      | Formata todos os arquivos do backend via Prettier (tab 2)    |
+| `npm run db:generate` | Gera os tipos e cliente Prisma em `generated/prisma/`        |
+| `npm run db:migrate`  | Aplica as migrations versionadas ao PostgreSQL               |
+| `npm run db:seed`     | Executa o seed de dados iniciais (`prisma/seed.ts`)          |
+| `npm run db:studio`   | Abre o painel visual de administração do Prisma Studio       |
 
 ---
 
-## 🧰 Scripts
+## 🛠️ Stack Tecnológica
 
-| Script                | O que faz                            |
-| --------------------- | ------------------------------------ |
-| `npm run dev`         | Inicia o servidor de desenvolvimento |
-| `npm run build`       | Compila o projeto para produção      |
-| `npm start`           | Executa o projeto compilado          |
-| `npm run db:generate` | Gera o Prisma Client                 |
-| `npm run db:migrate`  | Cria e aplica migrations             |
-| `npm run db:studio`   | Abre o Prisma Studio                 |
-
----
-
-## 🛠️ Stack
-
-| Responsabilidade  | Tecnologia      |
-| ----------------- | --------------- |
-| Runtime           | Node.js 24+     |
-| Framework HTTP    | Express 5       |
-| Linguagem         | TypeScript      |
-| ORM               | Prisma          |
-| Banco de dados    | SQLite          |
-| Cache             | Redis (ioredis) |
-| Validação         | Zod             |
-| Fonte de notícias | Currents API    |
-| Containerização   | Docker          |
+| Camada / Responsabilidade | Tecnologia                             |
+| ------------------------- | -------------------------------------- |
+| Runtime                   | Node.js 24+ (ES Modules)               |
+| Framework HTTP            | Express 5                              |
+| Linguagem                 | TypeScript                             |
+| ORM                       | Prisma 7 (com `@prisma/adapter-pg`)    |
+| Banco de Dados Relacional | PostgreSQL 16                          |
+| Camada de Cache           | Redis (ioredis)                        |
+| Validação de Esquemas     | Zod                                    |
+| Provedor de Notícias      | Currents API                           |
+| Orquestração de Containers| Docker Compose                         |
+| Linter & Formatador       | Oxlint & Prettier                      |
 
 ---
 
-## 📰 Ingestão de Notícias (Currents API)
+## 🏗️ Padrões de Projeto e Arquitetura
 
-O backend busca notícias automaticamente da **[Currents API](https://currentsapi.services/)** através de um pipeline de ingestão que roda ao iniciar o servidor e depois **a cada hora**.
+O backend adota padrões consolidados de Orientação a Objetos e boas práticas arquiteturais:
 
-### Pipeline
+### 1. Chain of Responsibility (Ingestão de Notícias)
+O ciclo de ingestão é desacoplado em handlers especializados, onde cada etapa decide processar, passar adiante (`passToNext`) ou interromper a execução (`return null`):
 
+```text
+NewsSchedulerHandler (Timer de 1 hora / IngestNewsCommand)
+         │
+         ▼
+  FetchNewsHandler (Requisição HTTP à Currents API com timeout e retry)
+         │
+         ▼
+NormalizationHandler (Sanitização HTML, parse de datas e geração de slug)
+         │
+         ▼
+ ValidationHandler (Validação estrita de schema Zod)
+         │
+         ▼
+DeduplicationHandler (Deduplicação no banco de dados e lote em memória)
+         │
+         ▼
+NewsInsertionHandler (Persistência no PostgreSQL e associação de categoria)
+         │
+         ▼
+CacheEvictionHandler (Invalidação pontual do cache Redis 'news:list:*')
 ```
-CurrentsApiClient → Category lookup → NewsNormalizer → NewsValidator → NewsDeduplicator → NewsRepository
-```
+> Para documentação técnica detalhada de cada handler e diagramas, consulte [`chain.md`](../chain.md).
 
-| Etapa               | Responsabilidade                                                                                                             |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `CurrentsApiClient` | Faz a requisição à API e retorna os artigos brutos                                                                           |
-| `Category lookup`   | Compara o primeiro item de `category` com `Category.name` ou com seus termos separados por `_`; sem categoria, usa `general` |
-| `NewsNormalizer`    | Transforma o formato da API no schema interno da aplicação                                                                   |
-| `NewsValidator`     | Descarta artigos inválidos ou incompletos                                                                                    |
-| `NewsDeduplicator`  | Filtra artigos já existentes no banco (1 única query em lote)                                                                |
-| `NewsRepository`    | Persiste os artigos novos e invalida o cache de listagem                                                                     |
+### 2. Command Pattern
+- A interface [`ICommand`](src/commands/ICommand.ts) padroniza ações executáveis.
+- O [`IngestNewsCommand`](src/commands/IngestNewsCommand.ts) encapsula a execução do pipeline de notícias, desacoplando o invocador da lógica concreta do receptor.
 
-Após cada ingestão bem-sucedida, o cache Redis das listagens (`news:list:*`) é invalidado automaticamente.
+### 3. Segregação de Interfaces (ISP) & Injeção de Dependências
+- Controladores dependem de abstrações (ex: `INewsService`, `ICategoryService`, `IUserService`), facilitando testes unitários e criação de mocks.
+- Serviços utilizam instâncias singleton compartilhadas (`PrismaService.getInstance()`, `RedisService.getInstance()`).
 
-### Variável de ambiente obrigatória
+---
 
-| Variável           | Descrição                      |
-| ------------------ | ------------------------------ |
-| `CURRENTS_API_KEY` | Chave de acesso à Currents API |
+## 🪵 Sistema de Logs Corporativo
+
+O backend possui uma classe dedicada [`Logger`](src/utils/Logger.ts) com os seguintes recursos:
+- **Padronização no Console:** Saídas no formato `[ISO_TIMESTAMP] [LEVEL] [CONTEXT]: Mensagem`.
+- **Persistência Assíncrona no PostgreSQL:** Todo log emitido pelo backend é gravado na tabela **`logs`** (`id`, `level`, `context`, `message`, `metadata`, `created_at`).
+- **Comportamento Não-Bloqueante:** Falhas de gravação do log não interrompem a aplicação nem as respostas HTTP.
+
+> Consulte [`logs.md`](../logs.md) para detalhes da tabela, índices e contextos registrados.
 
 ---
 
 ## ⚙️ Variáveis de Ambiente
 
-| Variável           | Exemplo                               | Descrição                           |
-| ------------------ | ------------------------------------- | ----------------------------------- |
-| `DATABASE_URL`     | `postgresql://user:pass@localhost/db` | URL de conexão com o banco Postgres |
-| `PORT`             | `3000`                                | Porta utilizada pela API            |
-| `REDIS_URL`        | `redis://localhost:6379`              | URL de conexão com o Redis (cache)  |
-| `CURRENTS_API_KEY` | `abc123...`                           | Chave de acesso à Currents API      |
-
-> O arquivo `.env` é necessário para executar comandos locais que dependem dessas variáveis.
+| Variável                 | Tipo      | Obrigatório | Exemplo / Padrão                                       |
+| ------------------------ | --------- | ----------- | ------------------------------------------------------ |
+| `DATABASE_URL`           | `string`  | Sim         | `postgresql://newnews:newnews_dev@localhost:5432/newnews` |
+| `PORT`                   | `number`  | Sim         | `3000`                                                 |
+| `REDIS_URL`              | `string`  | Sim         | `redis://localhost:6379`                               |
+| `CURRENTS_API_KEY`       | `string`  | Recomendado | Chave gerada na Currents API                           |
+| `CURRENTS_API_BASE_URL`  | `string`  | Sim         | `https://api.currentsapi.services/v1/latest-news`      |
+| `DEVELOPMENT_MODE`       | `boolean` | Não         | `false`                                                |
 
 ---
 
-## 🔌 API
+## 🔌 Documentação dos Endpoints da API
 
-Todas as rotas utilizam o prefixo `/api`.
+Todas as rotas de negócio utilizam o prefixo `/api`.
 
-### Health Check
+### 1. Health Check
 
 ```http
 GET /api/health
 ```
 
-Verifica se a API está ativa.
-
 **Resposta `200 OK`:**
-
 ```json
 {
   "status": "ok",
   "service": "newnews-api",
-  "timestamp": "2026-10-06T13:00:00.000Z"
+  "timestamp": "2026-10-28T21:00:00.000Z"
 }
 ```
 
-### Notícias
+---
 
-| Método | Rota                    | Descrição                                       |
-| ------ | ----------------------- | ----------------------------------------------- |
-| `GET`  | `/api/news`             | Lista notícias com paginação e busca por texto  |
-| `GET`  | `/api/news/pt-br/:slug` | Retorna uma notícia pelo slug (português)       |
-| `GET`  | `/api/news/:id`         | Retorna uma notícia pelo ID                     |
-| `GET`  | `/api/news/:id/related` | Retorna notícias relacionadas (mesma categoria) |
+### 2. Notícias (`/api/news`)
+
+| Método | Rota                    | Descrição                                         |
+| ------ | ----------------------- | ------------------------------------------------- |
+| `GET`  | `/api/news`             | Lista notícias paginadas com busca e filtros      |
+| `POST` | `/api/news`             | Cria uma nova notícia manualmente                 |
+| `GET`  | `/api/news/search`      | Alias de busca textual de notícias                |
+| `GET`  | `/api/news/:id`         | Busca notícia por UUID                            |
+| `GET`  | `/api/news/:id/related` | Busca até 4 notícias relacionadas (mesma categoria) |
+| `GET`  | `/api/news/pt-br/:slug` | Busca notícia pelo slug legível                   |
 
 #### `GET /api/news`
-
-**Query params:**
-
-| Parâmetro | Tipo     | Padrão | Descrição                                     |
-| --------- | -------- | ------ | --------------------------------------------- |
-| `query`   | `string` | —      | Texto para busca em título, resumo e conteúdo |
-| `q`       | `string` | —      | Alias de `query`                              |
-| `page`    | `number` | `1`    | Página (mínimo 1)                             |
-| `limit`   | `number` | `10`   | Itens por página (máximo 100)                 |
+**Query Parameters suportados:**
+- `page`: Número da página (padrão: `1`)
+- `limit`: Quantidade de itens por página (padrão: `10`)
+- `query` ou `q`: Termo de busca em título e conteúdo
+- `category`: Nome da categoria (ex: `tecnologia`, `geral`, `negocios`)
 
 **Resposta `200 OK`:**
-
 ```json
 {
-  "source": "database",
-  "type": "all",
-  "query": null,
-  "pagination": {
-    "page": 1,
-    "limit": 10,
-    "totalItems": 120,
-    "totalPages": 12
-  },
-  "data": []
+  "success": true,
+  "data": [
+    {
+      "id": "e2a34567-89ab-cdef-0123-456789abcdef",
+      "category_id": 1,
+      "badge_bg": "bg-blue-500",
+      "title": "Título da Notícia",
+      "slug": "titulo-da-noticia",
+      "content": "Conteúdo formatado...",
+      "image_url": "https://...",
+      "news_url": "https://...",
+      "published_at": "2026-10-28T12:00:00.000Z",
+      "author": "Redação",
+      "source": "canaltech.com.br",
+      "category": {
+        "id": 1,
+        "name": "tecnologia",
+        "label": "Tecnologia",
+        "icon": "Cpu"
+      }
+    }
+  ]
 }
 ```
 
-> O campo `source` indica se a resposta veio do `cache` (Redis) ou do `database`.
-
-#### `GET /api/news/:id/related`
-
-**Query params:**
-
-| Parâmetro | Tipo     | Padrão | Descrição                          |
-| --------- | -------- | ------ | ---------------------------------- |
-| `limit`   | `number` | `4`    | Quantidade de notícias (máximo 50) |
-
-### Usuários
-
-| Método | Rota         | Descrição         |
-| ------ | ------------ | ----------------- |
-| `GET`  | `/api/users` | Lista os usuários |
-| `POST` | `/api/users` | Cria um usuário   |
-
-#### `POST /api/users`
-
-**Body:**
-
-| Campo   | Tipo     | Regras                |
-| ------- | -------- | --------------------- |
-| `email` | `string` | E-mail válido e único |
-| `name`  | `string` | 1–120 caracteres      |
-
----
-
-## ⚠️ Respostas de Erro
-
-### `400 Bad Request`
-
+#### `POST /api/news`
+**Corpo da Requisição (JSON):**
 ```json
 {
-  "error": "Invalid request body",
-  "issues": []
-}
-```
-
-### `404 Not Found`
-
-```json
-{
-  "error": "Not found"
-}
-```
-
-### `500 Internal Server Error`
-
-```json
-{
-  "error": "Internal server error"
+  "category_id": 1,
+  "badge_bg": "bg-blue-500",
+  "title": "Nova Notícia Importante",
+  "slug": "nova-noticia-importante",
+  "content": "Conteúdo completo da notícia...",
+  "image_url": "https://exemplo.com/imagem.jpg",
+  "news_url": "https://exemplo.com/materia",
+  "published_at": "2026-10-28T14:00:00.000Z",
+  "author": "Redação",
+  "source": "G1"
 }
 ```
 
 ---
 
-## 🗄️ Banco de Dados
+### 3. Categorias (`/api/categories`)
 
-O schema do Prisma está em:
+| Método | Rota                   | Descrição                                 |
+| ------ | ---------------------- | ----------------------------------------- |
+| `GET`  | `/api/categories`      | Retorna todas as categorias cadastradas   |
+| `GET`  | `/api/categories/:id`  | Retorna os detalhes de uma categoria por ID |
 
-```text
-prisma/schema.prisma
-```
-
-Criar uma nova migration:
-
-```bash
-npm run db:migrate -- --name nome_da_migration
-```
-
-Abrir o Prisma Studio:
-
-```bash
-npm run db:studio
+**Resposta `200 OK` em `/api/categories`:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "tecnologia",
+      "label": "Tecnologia",
+      "icon": "Cpu"
+    },
+    {
+      "id": 2,
+      "name": "geral",
+      "label": "Geral",
+      "icon": "Globe"
+    }
+  ]
+}
 ```
 
 ---
 
-## 📂 Estrutura de Pastas
+### 4. Usuários (`/api/users`)
+
+| Método | Rota                   | Descrição                                     |
+| ------ | ---------------------- | --------------------------------------------- |
+| `GET`  | `/api/users/:email`    | Busca dados de perfil do usuário pelo e-mail  |
+
+---
+
+## 🗄️ Modelagem do Banco de Dados (Prisma)
+
+O arquivo [`prisma/schema.prisma`](prisma/schema.prisma) contém as seguintes tabelas:
+
+1. **`users` (`User`)**: Usuários da plataforma (`id`, `name`, `email`, `password`, `avatar`, `created_at`, `updated_at`).
+2. **`categories` (`Category`)**: Categorias temáticas das notícias (`id`, `name`, `label`, `icon`).
+3. **`news` (`News`)**: Notícias persistidas (`id`, `category_id`, `badge_bg`, `title`, `slug`, `content`, `image_url`, `news_url`, `published_at`, `author`, `source`).
+4. **`logs` (`Log`)**: Auditoria e logs do backend (`id`, `level`, `context`, `message`, `metadata`, `created_at`).
+
+---
+
+## 📂 Estrutura Completa de Pastas
 
 ```text
 backend/
 ├── prisma/
-│   ├── migrations/        # Migrations do banco
-│   └── schema.prisma      # Schema do Prisma
+│   ├── migrations/            # Histórico de migrations versionadas
+│   ├── schema.prisma          # Modelos de dados relacionais
+│   └── seed.ts                # Povoamento inicial de categorias
 │
 ├── src/
-│   ├── config/            # Configurações e variáveis de ambiente
-│   ├── controllers/       # Lógica dos endpoints (newsController, userController)
-│   ├── lib/               # Instâncias compartilhadas (Prisma, Redis)
-│   ├── routes/            # Definição das rotas da API
-│   ├── services/
-│   │   └── newsIngestion/ # Pipeline de ingestão da Currents API
-│   │       ├── CurrentsApiClient.ts
-│   │       ├── NewsNormalizer.ts
-│   │       ├── NewsValidator.ts
-│   │       ├── NewsDeduplicator.ts
-│   │       ├── NewsRepository.ts
-│   │       └── NewsIngestionPipeline.ts
-│   ├── container.ts       # Injeção de dependências (prisma, cache)
-│   ├── app.ts             # Configuração do Express + agendador de ingestão
-│   └── server.ts          # Inicialização do servidor HTTP
+│   ├── commands/              # Padrão Command
+│   │   ├── ICommand.ts
+│   │   └── IngestNewsCommand.ts
+│   ├── config/                # Validação de variáveis de ambiente com Zod
+│   │   └── env.ts
+│   ├── controllers/           # Controladores Express e interfaces
+│   │   ├── interfaces/
+│   │   ├── CategoryController.ts
+│   │   ├── NewsController.ts
+│   │   └── UserController.ts
+│   ├── dtos/                  # Objetos de transferência de dados (DTOs)
+│   │   └── CreateNewsDto.ts
+│   ├── mappers/               # Conversores Prisma -> Entidades de Domínio
+│   │   ├── CategoryMapper.ts
+│   │   ├── NewsMapper.ts
+│   │   └── UserMapper.ts
+│   ├── models/entities/       # Entidades de Domínio puras (POO)
+│   │   ├── Category.ts
+│   │   ├── News.ts
+│   │   └── User.ts
+│   ├── queries/               # Utilitários de paginação e filtros (QueryOptions)
+│   │   └── QueryOptions.ts
+│   ├── routes/                # Definição e montagem de rotas Express
+│   │   ├── CategoryRouter.ts
+│   │   ├── HealthRouter.ts
+│   │   ├── NewsRouter.ts
+│   │   ├── UserRouter.ts
+│   │   └── index.ts
+│   ├── services/              # Regras de negócio e acesso à infraestrutura
+│   │   ├── interfaces/        # Contratos de serviços (ISP)
+│   │   ├── newsIngestion/     # Ingestão de Notícias via Chain of Responsibility
+│   │   │   ├── handlers/      # Handlers especializados da cadeia
+│   │   │   │   ├── CacheEvictionHandler.ts
+│   │   │   │   ├── DeduplicationHandler.ts
+│   │   │   │   ├── FetchNewsHandler.ts
+│   │   │   │   ├── INewsHandler.ts
+│   │   │   │   ├── NewsInsertionHandler.ts
+│   │   │   │   ├── NewsSchedulerHandler.ts
+│   │   │   │   ├── NormalizationHandler.ts
+│   │   │   │   └── ValidationHandler.ts
+│   │   │   ├── CurrentsApiClient.ts
+│   │   │   ├── NewsIngestionPipeline.ts
+│   │   │   ├── NewsNormalizer.ts
+│   │   │   ├── NewsRepository.ts
+│   │   │   └── NewsValidator.ts
+│   │   ├── CategoryService.ts
+│   │   ├── NewsService.ts
+│   │   ├── PrismaService.ts
+│   │   ├── RedisService.ts
+│   │   └── UserService.ts
+│   ├── utils/                 # Utilitários gerais
+│   │   ├── Logger.ts          # Sistema de logs com persistência no banco
+│   │   └── slugify.ts         # Sanitização de slugs
+│   ├── app.ts                 # Configuração do Express e middlewares
+│   └── server.ts              # Inicialização do servidor HTTP e shutdown
 │
 ├── .env.example
 ├── package.json
 ├── prisma.config.ts
 └── tsconfig.json
 ```
-
----
-
-## 📐 Convenções
-
-### Organização
-
-* **`routes/`** → define os endpoints e recebe as requisições HTTP.
-* **`controllers/`** → contém a lógica de negócio de cada rota.
-* **`config/`** → concentra configurações e variáveis de ambiente.
-* **`lib/`** → concentra instâncias e dependências compartilhadas.
-* **`services/newsIngestion/`** → pipeline de busca e persistência de notícias.
-* **`app.ts`** → configura o Express e agenda a ingestão automática.
-* **`server.ts`** → inicializa o servidor HTTP.
-
-### Nomenclatura
-
-* Arquivos → `camelCase` quando representarem módulos simples; `PascalCase` para classes.
-* Rotas → nomes no plural para recursos (`users`, `news`).
-* Variáveis e funções → `camelCase`.
-* Tipos e interfaces → `PascalCase`.
-* Constantes → `UPPER_SNAKE_CASE` quando forem constantes globais.
-
-### Validação
-
-A validação de entradas deve ser feita com **Zod** antes que os dados sejam processados pela aplicação ou enviados ao banco.
-
-### Banco de dados
-
-Alterações no schema devem ser realizadas através de **migrations do Prisma**, evitando alterações manuais no banco de desenvolvimento.
