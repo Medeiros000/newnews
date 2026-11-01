@@ -17,7 +17,8 @@ CREATE TABLE "news" (
     "image_url" TEXT NOT NULL,
     "published_at" DATETIME NOT NULL,
     "author" TEXT NOT NULL,
-    "source" TEXT NOT NULL
+    "source" TEXT NOT NULL,
+    CONSTRAINT "news_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "categories" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
 -- CreateIndex

@@ -9,9 +9,14 @@ export class NewsRepository {
     ) {}
 
     async save(newsItem: NormalizedNews) {
+        console.log('🔍 Verificando se a categoria existe:', newsItem.category);
+        const categoryExists = await this.prisma.category.findUnique({
+            where: { name: newsItem.category },
+        });
+        console.log('🔍 Categoria encontrada:', categoryExists);
         const saved = await this.prisma.news.create({
             data: {
-                category_id: newsItem.category_id,
+                category_id: categoryExists?.id || newsItem.category_id,
                 badge_bg: newsItem.badge_bg,
                 title: newsItem.title,
                 summary: newsItem.summary,

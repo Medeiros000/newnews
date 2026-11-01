@@ -11,6 +11,7 @@ export const newsValidationSchema = z.object({
     image_url: z.string().url().max(2048),
     published_at: z.date(),
     author: z.string().max(120).default('Redação'),
+    category: z.string().max(120).optional(),
     source: z.string().max(120),
 });
 
