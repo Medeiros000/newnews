@@ -1,6 +1,5 @@
 import { create } from 'zustand';
-import { CategoryService } from '@/services';
-
+import { categoryService } from '@/services';
 
 /**
  * Global navigation store (Zustand).
@@ -22,9 +21,9 @@ export const useNavigationStore = create((set, get) => ({
 
   /**
    * Sets the active navigation item
-   * @param {string} id - The ID of the nav item to activate
+   * @param {string|number} id - The ID of the nav item to activate
    */
-  setActiveNavId: (id) => set({ activeNavId: id }),
+  setActiveNavId: (id) => set({ activeNavId: String(id) }),
 
   /**
    * Updates the raw search query and schedules a debounced update.
@@ -54,9 +53,7 @@ export const useNavigationStore = create((set, get) => ({
    */
   loadNavigation: async () => {
     try {
-      
-      const res = await CategoryService.getAllCategories();
-      
+      const res = await categoryService.getAllCategories();
       if (res.success && res.data) {
         set({ navigationItems: res.data });
       }
@@ -67,15 +64,25 @@ export const useNavigationStore = create((set, get) => ({
 }));
 
 /**
- * Selector: derives the currently selected news category from the active nav item.
- * Returns 'salvos' for the bookmarks tab, or the category linked to the active nav item.
+ * Selector: derives the currently selected news category name from the active nav item.
+ * Returns null if 'inicio', returns 'salvos' for the bookmarks tab, or the category name (e.g. 'Futebol').
  * @param {Object} state - The navigation store state
- * @returns {string|null} The active category string, or null if none is matched
+ * @returns {string|null} The active category name or null
  */
 export const selectNavCategory = (state) => {
-  if (state.activeNavId === 'salvos') return 'salvos';
+  const activeId = String(state.activeNavId || '').toLowerCase();
+  if (activeId === 'inicio') {
+    return null;
+  }
+  if (activeId === 'salvos') {
+    return 'salvos';
+  }
+
   const activeNavItem = state.navigationItems.find(
-    (item) => item.id === state.activeNavId,
+    (item) =>
+      String(item.id) === String(state.activeNavId) ||
+      item.name?.toLowerCase() === state.activeNavId?.toLowerCase(),
   );
-  return activeNavItem?.category ?? null;
+
+  return activeNavItem ? activeNavItem.name : state.activeNavId;
 };

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-import { userService } from '@/services';
+import { UserService } from '@/services';
 
 /**
  * Global user store (Zustand).
@@ -45,8 +45,8 @@ export const useUserStore = create((set) => ({
 
     try {
       const [profileRes, notifRes] = await Promise.all([
-        userService.getUserProfile(),
-        userService.getUserNotifications(),
+        UserService.getUserProfile(),
+        UserService.getUserNotifications(),
       ]);
 
       set({

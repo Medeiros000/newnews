@@ -8,7 +8,7 @@ import { APP_CONFIG } from '@/utils';
  * search queries, and the hero article for the default feed view.
  *
  * @param {Object} params
- * @param {string|null} params.navSelectedCategory - The currently selected nav category ID
+ * @param {string|null} params.navSelectedCategory - The currently selected category name or null
  * @param {string} params.searchQuery - The debounced search query string
  * @param {Set} params.bookmarkedArticleIds - Set of bookmarked article IDs for filtering the saved tab
  *
@@ -16,12 +16,12 @@ import { APP_CONFIG } from '@/utils';
  */
 export function useNewsFeed({
   navSelectedCategory,
-  searchQuery,
+  searchQuery = '',
   bookmarkedArticleIds,
 }) {
   const [categories, setCategories] = useState([]);
   const [navItems, setNavItems] = useState([]);
-  const [activeCategory, setActiveCategory] = useState([]);
+  const [activeCategory, setActiveCategory] = useState(null);
   const [articlesList, setArticlesList] = useState([]);
   const [heroArticle, setHeroArticle] = useState(null);
   const [page, setPage] = useState(1);
@@ -52,36 +52,24 @@ export function useNewsFeed({
     };
   }, []);
 
-  // Build a unified set of valid categories from nav items and API data
-  const validCategoriesSet = useMemo(() => {
-    const set = new Set(navItems.map((item) => item.category).filter(Boolean));
-    categories.forEach((cat) => set.add(cat));
-    return set;
-  }, [navItems, categories]);
-
   const isSavedTabActive = navSelectedCategory === 'salvos';
 
-  // Derive the effective category from the nav selection or local state
-  const effectiveCategory = isSavedTabActive
-    ? 'Salvos'
-    : validCategoriesSet.has(navSelectedCategory)
-      ? navSelectedCategory
-      : activeCategory;
+  // Effective category name to query: null or undefined for all news ("inicio"), or category name
+  const effectiveCategory = useMemo(() => {
+    if (isSavedTabActive) return 'Salvos';
+    if (navSelectedCategory) return navSelectedCategory;
+    return activeCategory;
+  }, [isSavedTabActive, navSelectedCategory, activeCategory]);
 
-  const cleanQuery = searchQuery.trim();
+  const cleanQuery = (searchQuery || '').trim();
 
-  // True when no search and no category filter are applied
-  const isDefaultFeed =
-    effectiveCategory === 'Todos' && !cleanQuery && !isSavedTabActive;
+  // True when on inicio (all news) without search or bookmarks
+  const isDefaultFeed = !effectiveCategory && !cleanQuery && !isSavedTabActive;
 
   /**
    * Fetches a page of articles from the API.
    * Supports both initial loads and "load more" pagination.
    * Uses AbortController signals to cancel in-flight requests on re-renders.
-   *
-   * @param {number} targetPage - The page number to fetch
-   * @param {boolean} [isLoadMore=false] - Whether to append to the existing list
-   * @param {AbortSignal} [signal] - AbortController signal for cancellation
    */
   const fetchArticlesPage = useCallback(
     async (targetPage, isLoadMore = false, signal) => {
@@ -92,17 +80,23 @@ export function useNewsFeed({
       if (!isLoadMore) setError(null);
 
       try {
-        const res = await newsService.getNews({
-          // category: isSavedTabActive ? 'Todos' : effectiveCategory,
-          query: cleanQuery,
+        const queryParams = {
+          query: cleanQuery || undefined,
           page: targetPage,
           limit: APP_CONFIG.DEFAULT_PAGE_LIMIT,
-        });
+        };
+
+        // When not saved tab and effectiveCategory is present (i.e. not "inicio"), filter by category name
+        if (!isSavedTabActive && effectiveCategory && effectiveCategory !== 'Todos') {
+          queryParams.category = effectiveCategory;
+        }
+
+        const res = await newsService.getNews(queryParams);
 
         if (signal?.aborted) return;
 
         if (res.success) {
-          const list = res.data;
+          const list = Array.isArray(res.data) ? res.data : [];
 
           // Append to list on "load more", replace on fresh load
           setArticlesList((prev) => (isLoadMore ? [...prev, ...list] : list));
@@ -111,9 +105,17 @@ export function useNewsFeed({
 
           // Fetch the trending hero article only on fresh default-feed loads
           if (!isLoadMore && isDefaultFeed) {
-            const trending = await newsService.getTrending();
-            if (!signal?.aborted) {
-              setHeroArticle(trending.data || list[0]);
+            try {
+              const trending = await newsService.getTrending();
+              if (!signal?.aborted && trending?.data) {
+                setHeroArticle(trending.data);
+              } else if (!signal?.aborted) {
+                setHeroArticle(list[0] || null);
+              }
+            } catch {
+              if (!signal?.aborted) {
+                setHeroArticle(list[0] || null);
+              }
             }
           }
         }
@@ -130,7 +132,7 @@ export function useNewsFeed({
     [effectiveCategory, cleanQuery, isSavedTabActive, isDefaultFeed],
   );
 
-  // Re-fetch articles whenever the effective filters change
+  // Re-fetch articles whenever filters change
   useEffect(() => {
     const controller = new AbortController();
     fetchArticlesPage(1, false, controller.signal);
@@ -140,7 +142,7 @@ export function useNewsFeed({
   // For the saved tab, filter articles to only those that are bookmarked
   const displayArticles = useMemo(() => {
     if (isSavedTabActive) {
-      return articlesList.filter((a) => bookmarkedArticleIds.has(a.id));
+      return articlesList.filter((a) => bookmarkedArticleIds?.has(a.id));
     }
     return articlesList;
   }, [articlesList, isSavedTabActive, bookmarkedArticleIds]);
@@ -152,7 +154,7 @@ export function useNewsFeed({
   const gridArticles = useMemo(
     () =>
       shouldShowHero
-        ? displayArticles.filter((a) => a.id !== heroArticle.id)
+        ? displayArticles.filter((a) => a.id !== heroArticle?.id)
         : displayArticles,
     [displayArticles, heroArticle, shouldShowHero],
   );
@@ -160,12 +162,17 @@ export function useNewsFeed({
   // Human-readable summary shown below the search bar or saved tab header
   const searchResultsSummary = useMemo(() => {
     const count = displayArticles.length;
-    if (cleanQuery)
+    if (cleanQuery) {
       return `${count} resultado${count !== 1 ? 's' : ''} para "${cleanQuery}"`;
-    if (isSavedTabActive)
+    }
+    if (isSavedTabActive) {
       return `${count} artigo${count !== 1 ? 's' : ''} salvo${count !== 1 ? 's' : ''}`;
+    }
+    if (effectiveCategory) {
+      return `Categoria: ${effectiveCategory} (${count} notícia${count !== 1 ? 's' : ''})`;
+    }
     return null;
-  }, [cleanQuery, isSavedTabActive, displayArticles.length]);
+  }, [cleanQuery, isSavedTabActive, effectiveCategory, displayArticles.length]);
 
   return {
     categories,

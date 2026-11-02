@@ -1,3 +1,3 @@
-export * from './newsService.js';
-export * from './userService.js';
-export { CategoryService } from './CategoryService.js';
+export { NewsService, newsService } from './NewsService.js';
+export { UserService, userService } from './UserService.js';
+export { CategoryService, categoryService } from './CategoryService.js';

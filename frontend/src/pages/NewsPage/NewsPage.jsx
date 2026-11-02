@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { Navbar } from '@/components/Navbar';
 import { ToastContainer } from '@/components/ToastContainer';
-import { newsService } from '@/services/newsService';
+import { newsService } from '@/services';
 import { useToastStore, useBookmarksStore } from '@/stores';
 import {
   IconArrowLeft,
@@ -10,16 +10,14 @@ import {
   IconUser,
   IconShare,
   IconBookmark,
-  IconLinkFilled,
   IconLinkPlus,
 } from '@tabler/icons-react';
 import './NewsPage.css';
 
 /**
  * Detailed News Article View page component.
- * Retrieves and renders full article details specified by the URL query string (`id`),
- * automatically registers read status in bookmarks store, and fetches contextual related
- * articles scored by category proximity and keyword similarity.
+ * Retrieves and renders full article details specified by the URL slug,
+ * automatically registers read status in bookmarks store, and fetches contextual related articles.
  */
 export function NewsPage() {
   const { slug } = useParams();
@@ -27,19 +25,17 @@ export function NewsPage() {
   const articleSlug = slug;
   const [article, setArticle] = useState(null);
   const [relatedNews, setRelatedNews] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(Boolean(articleSlug));
+  const [error, setError] = useState(articleSlug ? null : 'Nenhuma notícia foi selecionada.');
 
   const showToast = useToastStore((state) => state.showToastNotification);
-  const { bookmarkedArticleIds, toggleArticleBookmark, markArticleAsRead } =
+  const { bookmarkedArticleIds, toggleArticleBookmark } =
     useBookmarksStore();
 
   useEffect(() => {
-    if (!articleSlug) {
-      setError('Nenhuma notícia foi selecionada.');
-      setIsLoading(false);
-      return;
-    }
+    if (!articleSlug) return;
+
+    let isMounted = true;
 
     async function fetchArticleData() {
       try {
@@ -47,37 +43,48 @@ export function NewsPage() {
         setError(null);
         const res = await newsService.getNewsBySlug(articleSlug);
         const articleData = res.data;
-        setArticle(articleData);
-        console.log('articleData: ', articleData);
-        // markArticleAsRead(Number(articleId));
+        if (!isMounted) return;
 
-        // Fetch contextual related articles scored by category, topic, and keyword relevance
+        setArticle(articleData);
+
+        // Fetch contextual related articles
         try {
           const relatedRes = await newsService.getRelatedNews(articleData.id, {
             limit: 3,
           });
-          setRelatedNews(relatedRes.data || []);
+          if (isMounted) {
+            setRelatedNews(relatedRes.data || []);
+          }
         } catch {
-          // Graceful fallback strategy: fetch top category articles if related endpoint fails
           const fallbackRes = await newsService.getNews({
             category: articleData?.category,
             limit: 6,
           });
-          const filtered = (fallbackRes.data || [])
-            .filter((item) => Number(item.id) !== Number(articleData.id))
-            .slice(0, 3);
-          setRelatedNews(filtered);
+          if (isMounted) {
+            const filtered = (fallbackRes.data || [])
+              .filter((item) => Number(item.id) !== Number(articleData.id))
+              .slice(0, 3);
+            setRelatedNews(filtered);
+          }
         }
       } catch {
-        setError('Não foi possível carregar os detalhes desta notícia.');
+        if (isMounted) {
+          setError('Não foi possível carregar os detalhes desta notícia.');
+        }
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     }
 
     fetchArticleData();
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [articleSlug, markArticleAsRead]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [articleSlug]);
 
   const handleShare = () => {
     const currentUrl = window.location.href;
@@ -89,12 +96,12 @@ export function NewsPage() {
         '🔗',
       );
     } else {
-      showToast(`Compartilhando: ${article.title}`, 'info', '📢');
+      showToast(`Compartilhando: ${article?.title || ''}`, 'info', '📢');
     }
   };
 
   const isBookmarked = article
-    ? bookmarkedArticleIds.has(Number(article.id))
+    ? bookmarkedArticleIds.has(Number(article.id)) || bookmarkedArticleIds.has(String(article.id))
     : false;
 
   return (
@@ -104,6 +111,7 @@ export function NewsPage() {
       <main className="container-xl py-4 flex-grow-1">
         {/* Back navigation action returning to main feed view */}
         <button
+          type="button"
           onClick={() => navigate('/')}
           className="btn btn-link text-decoration-none text-body p-0 mb-4 d-inline-flex align-items-center gap-2 fw-semibold nav-back-btn"
         >
@@ -125,6 +133,7 @@ export function NewsPage() {
           <div className="alert alert-warning text-center my-4 rounded-3 p-4">
             <p className="mb-3 fw-semibold">{error}</p>
             <button
+              type="button"
               className="btn btn-primary rounded-pill px-4"
               onClick={() => navigate('/')}
             >
@@ -146,7 +155,7 @@ export function NewsPage() {
                   className="img-fluid w-100 object-fit-cover article-cover-img"
                 />
                 <span
-                  className={`badge bg-${article.badgeBg || 'primary'} position-absolute bottom-0 start-0 m-3 px-3 py-2 rounded-pill fs-6 shadow-sm`}
+                  className={`badge bg-${article.badgeBg || article.badge_bg || 'primary'} position-absolute bottom-0 start-0 m-3 px-3 py-2 rounded-pill fs-6 shadow-sm`}
                 >
                   {article.category}
                 </span>
@@ -164,21 +173,29 @@ export function NewsPage() {
                   <div className="d-flex flex-wrap align-items-center gap-3 text-secondary small">
                     <span className="d-inline-flex align-items-center gap-1">
                       <IconClock size={18} className="text-muted" />
-                      <time>{article.publishedTimeAgo || 'Há 2 horas'}</time>
+                      <time>{article.publishedTimeAgo || 'Recente'}</time>
                     </span>
                     <span className="d-inline-flex align-items-center gap-1">
                       <IconUser size={18} className="text-muted" />
-                      <span>Por {article.author || 'Redação NewsHub'}</span>
+                      <span>Por {article.author || 'Redação New News'}</span>
                     </span>
                   </div>
 
                   <div className="d-flex align-items-center gap-2">
-                    <Link to={`${article.news_url}`} target="_blank" rel="noopener noreferrer" className="btn btn-sm btn-outline-secondary rounded-pill d-inline-flex align-items-center gap-1">
-                      <IconLinkPlus size={16} />
-                      <span>Acessar fonte original</span>
-                    </Link>
+                    {article.news_url && (
+                      <Link
+                        to={article.news_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-sm btn-outline-secondary rounded-pill d-inline-flex align-items-center gap-1"
+                      >
+                        <IconLinkPlus size={16} />
+                        <span>Acessar fonte original</span>
+                      </Link>
+                    )}
                     <button
-                      onClick={() => navigate(`${article.news_url}`)}
+                      type="button"
+                      onClick={() => toggleArticleBookmark(article.id)}
                       className={`btn btn-sm ${isBookmarked ? 'btn-primary' : 'btn-outline-secondary'} rounded-pill d-inline-flex align-items-center gap-1`}
                       title={
                         isBookmarked ? 'Remover dos salvos' : 'Salvar notícia'
@@ -192,6 +209,7 @@ export function NewsPage() {
                     </button>
 
                     <button
+                      type="button"
                       onClick={handleShare}
                       className="btn btn-sm btn-outline-secondary rounded-pill d-inline-flex align-items-center gap-1"
                     >
@@ -211,7 +229,7 @@ export function NewsPage() {
                     </p>
                   ))
                 ) : (
-                  <p className="mb-3 fs-5 lh-base">{article.summary}</p>
+                  <p className="mb-3 fs-5 lh-base">{article.content || article.summary}</p>
                 )}
               </section>
             </article>
@@ -242,7 +260,7 @@ export function NewsPage() {
                         />
                         <div className="d-flex flex-column justify-content-between min-w-0">
                           <span
-                            className={`badge bg-${item.badgeBg || 'primary'} bg-opacity-10 text-${item.badgeBg || 'primary'} align-self-start mb-1 rounded-pill`}
+                            className={`badge bg-${item.badgeBg || item.badge_bg || 'primary'} bg-opacity-10 text-${item.badgeBg || item.badge_bg || 'primary'} align-self-start mb-1 rounded-pill`}
                           >
                             {item.category}
                           </span>
@@ -251,7 +269,7 @@ export function NewsPage() {
                           </h3>
                           <span className="text-secondary small d-inline-flex align-items-center gap-1">
                             <IconClock size={14} />
-                            {item.publishedTimeAgo}
+                            {item.publishedTimeAgo || 'Recente'}
                           </span>
                         </div>
                       </div>

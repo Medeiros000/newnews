@@ -9,7 +9,6 @@ import {
   useUserStore,
   useNavigationStore,
   useBookmarksStore,
-  useToastStore,
   selectNavCategory,
 } from '@/stores';
 import { getTimeBasedGreeting, formatCurrentDateTime } from '@/utils';
@@ -28,6 +27,7 @@ export function HomePage() {
     (state) => state.debouncedSearchQuery,
   );
   const clearSearch = useNavigationStore((state) => state.clearSearch);
+  const setActiveNavId = useNavigationStore((state) => state.setActiveNavId);
   const readArticleIds = useBookmarksStore((state) => state.readArticleIds);
   const bookmarkedArticleIds = useBookmarksStore(
     (state) => state.bookmarkedArticleIds,
@@ -50,7 +50,6 @@ export function HomePage() {
     effectiveCategory,
     shouldShowHero,
     searchResultsSummary,
-    setActiveCategory,
     reloadNewsFeed,
     loadMoreArticles,
   } = useNewsFeed({
@@ -58,17 +57,14 @@ export function HomePage() {
     searchQuery: debouncedSearchQuery,
     bookmarkedArticleIds,
   });
-  console.log('home', gridArticles);
 
   const handleOpenArticleModal = (article) => {
     markArticleAsRead(article.id);
-    console.log('Navigating to article slug:', article.slug);
     navigate(`/news/${article.slug}`);
   };
 
   const searchQuery = debouncedSearchQuery;
-  const isDefaultCategory =
-    effectiveCategory === 'Todos' && !searchQuery.trim() && !isSavedTabActive;
+  const isDefaultCategory = !effectiveCategory && !searchQuery.trim() && !isSavedTabActive;
 
   return (
     <div className="vh-100 d-flex flex-column overflow-hidden">
@@ -95,6 +91,7 @@ export function HomePage() {
               {searchResultsSummary}
               {searchQuery.trim() && (
                 <button
+                  type="button"
                   className="btn btn-link btn-sm p-0 ms-2 align-baseline small"
                   onClick={clearSearch}
                 >
@@ -114,6 +111,7 @@ export function HomePage() {
                 <strong>⚠️ Falha de Conexão:</strong> {error}
               </div>
               <button
+                type="button"
                 className="btn btn-outline-danger btn-sm rounded-pill"
                 onClick={reloadNewsFeed}
               >
@@ -143,7 +141,7 @@ export function HomePage() {
                   isSavedTabActive={isSavedTabActive}
                   category={effectiveCategory}
                   onClearSearch={clearSearch}
-                  onResetCategory={() => setActiveCategory('Todos')}
+                  onResetCategory={() => setActiveNavId('inicio')}
                 />
               ) : (
                 <>
@@ -164,6 +162,7 @@ export function HomePage() {
                   {hasMoreArticles && !isSavedTabActive && (
                     <div className="text-center mt-4 pt-2">
                       <button
+                        type="button"
                         className="btn btn-outline-primary rounded-pill px-4"
                         disabled={isLoadingMore}
                         onClick={loadMoreArticles}
