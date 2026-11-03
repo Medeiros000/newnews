@@ -32,7 +32,7 @@ const categories = [
     },
     {
         name: 'science_technology',
-        label: 'Ciência e Tecnologia',
+        label: 'Tecnologia',
         icon: 'U+1F4BB',
     },
     {
@@ -41,24 +41,19 @@ const categories = [
         icon: 'U+1F3E0',
     },
     {
-        label: 'Economia, Negócios e Finanças',
+        label: 'Finanças',
         name: 'economy_business_finance',
         icon: 'U+1F4B0',
     },
     {
-        label: 'Artes, Cultura e Entretenimento',
+        label: 'Entretenimento',
         name: 'arts_culture_entertainment',
         icon: 'U+1F3A8',
     },
     {
-        label: 'Estilo de Vida e Lazer',
+        label: 'Lazer',
         name: 'lifestyle_leisure',
         icon: 'U+1F3E0',
-    },
-    {
-        label: 'Interesse Humano',
-        name: 'human_interest',
-        icon: 'U+1F4AA',
     },
     {
         label: 'Esportes',
@@ -66,7 +61,7 @@ const categories = [
         icon: 'U+1F3C0',
     },
     {
-        label: 'Crime, Lei e Justiça',
+        label: 'Justiça',
         name: 'crime_law_justice',
         icon: 'U+1F6E1',
     },
@@ -76,12 +71,12 @@ const categories = [
         icon: 'U+1F393',
     },
     {
-        label: 'Saúde e Medicina',
+        label: 'Saúde',
         name: 'health_medicine',
         icon: 'U+1F489',
     },
     {
-        label: 'Meio Ambiente e Sustentabilidade',
+        label: 'Meio Ambiente',
         name: 'environment_sustainability',
         icon: 'U+1F331',
     },

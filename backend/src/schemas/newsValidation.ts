@@ -4,6 +4,7 @@ export const newsQuerySchema = z
   .object({
     query: z.string().trim().max(200).optional(),
     q: z.string().trim().max(200).optional(),
+    category: z.string().trim().optional(),
     page: z.coerce.number().int().min(1).default(1),
     limit: z.coerce.number().int().min(1).max(100).default(10),
   })

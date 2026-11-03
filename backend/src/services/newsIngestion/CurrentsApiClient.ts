@@ -10,13 +10,14 @@ export interface CurrentsArticle {
     url?: string;
     published?: string;
     author?: string;
+    category?: string[];
     domain?: string;
     language?: string;
 }
 
 export class CurrentsApiClient {
     private apiKey: string;
-    private baseUrl = 'https://api.currentsapi.services/v1/latest-news';
+    private baseUrl = 'https://api.currentsapi.services/v2/latest-news';
 
     constructor() {
         this.apiKey = env.CURRENTS_API_KEY || '';
@@ -28,7 +29,7 @@ export class CurrentsApiClient {
     async fetchLatestNews(): Promise<CurrentsArticle[]> {
         try {
             const url = `${this.baseUrl}?language=pt&apiKey=${this.apiKey}`;
-
+            console.log(`🔗 Requisição à Currents API: ${url}`);
             const response = await fetch(url, {
                 signal: AbortSignal.timeout(8000),
             });
