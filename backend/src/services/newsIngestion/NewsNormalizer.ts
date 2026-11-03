@@ -9,6 +9,7 @@ export interface NormalizedNews {
     image_url: string;
     published_at: Date;
     author: string;
+    category?: string;
     source: string;
 }
 
@@ -28,7 +29,7 @@ export class NewsNormalizer {
 
     normalize(raw: CurrentsArticle, category_id: string): NormalizedNews {
         // Título truncado a 255 chars
-        const rawTitle = raw.title || 'Notícia sem título';
+        const rawTitle = raw.title || raw.description?.slice(0,60) || 'Sem título';
         const title = rawTitle.slice(0, 255);
 
         const rawSummary = raw.description || raw.summary || 'Sem resumo disponível.';
@@ -61,6 +62,7 @@ export class NewsNormalizer {
             image_url,
             published_at,
             author: raw.author || 'Redação',
+            category: raw.category?.[0] || 'general',
             source,
         };
     }

@@ -8,7 +8,7 @@ export class NewsController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly cache: RedisService
-  ) {}
+  ) { }
 
   public searchNews = async (request: Request, response: Response, next: NextFunction): Promise<void> => {
     const result = newsQuerySchema.safeParse(request.query);
@@ -21,18 +21,28 @@ export class NewsController {
       return;
     }
 
-    const { query, page, limit } = result.data;
+    const { query, category, page, limit } = result.data;
     const where = query
       ? {
-          OR: [
-            { title: { contains: query } },
-            { summary: { contains: query } },
-            { content: { contains: query } },
-          ],
-        }
+        OR: [
+          { title: { contains: query } },
+          { summary: { contains: query } },
+          { content: { contains: query } },
+        ],
+      }
       : undefined;
 
-    const cacheKey = `news:list:${encodeURIComponent(query?.toLowerCase() || 'all')}:page:${page}:limit:${limit}`;
+    if (category) {
+      console.log(`Category filter ${category}.`); // Placeholder for future implementation
+      // if (!where) {
+      //   where = {};
+      // }
+      // where.category_id = category;
+    }
+
+    const cacheKey = `news:list:${encodeURIComponent(
+      query?.toLowerCase() || 'all',
+    )}category:${category || 'all'}:page:${page}:limit:${limit}`;
 
     try {
       const cachedData = await this.cache.get<any>(cacheKey);
@@ -43,17 +53,26 @@ export class NewsController {
         });
         return;
       }
-
+      console.log(`Cache miss for key: ${cacheKey}. Fetching from database.`);
       const [newsRaw, totalItems] = await Promise.all([
         this.prisma.news.findMany({
           skip: (page - 1) * limit,
           take: limit,
-          where,
+          where: {
+            ...where,
+            ...(category && {
+              category: {
+                is: {
+                  name: category,
+                },
+              },
+            }),
+          },
           orderBy: { published_at: 'desc' },
         }),
         this.prisma.news.count({ where }),
       ]);
-
+      console.log(`Fetched ${newsRaw.length} news items from database. Total items: ${totalItems}.`);
       const newsDomain = NewsMapper.toDomainList(newsRaw);
 
       const responsePayload = {
