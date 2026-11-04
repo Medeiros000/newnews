@@ -12,7 +12,7 @@ Este projeto segue uma arquitetura de **monorepo**: cada módulo é completament
 newnews/
 ├── compose.yaml   # Orquestração de todos os serviços via Docker Compose
 ├── frontend/      # Aplicação web (React + Vite) → veja frontend/README.md
-└── backend/       # API e integração de notícias → veja backend/README.md (em breve)
+└── backend/       # API e integração de notícias → veja backend/README.md 
 ```
 
 > Para entender a arquitetura, regras e como trabalhar em cada módulo, acesse o **README da pasta correspondente**.
