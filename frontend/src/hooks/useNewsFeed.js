@@ -20,7 +20,6 @@ export function useNewsFeed({
   bookmarkedArticleIds,
 }) {
   const [categories, setCategories] = useState(['Todos']);
-  const [navItems, setNavItems] = useState([]);
   const [activeCategory, setActiveCategory] = useState('Todos');
   const [articlesList, setArticlesList] = useState([]);
   const [heroArticle, setHeroArticle] = useState(null);
@@ -32,15 +31,15 @@ export function useNewsFeed({
     more: false,
   });
 
-  // Fetch dynamic categories and navigation items from the news API
+  // Fetch dynamic categories from the news API
   useEffect(() => {
     let isMounted = true;
     async function loadMetaData() {
       try {
         const res = await newsService.getCategories();
         if (isMounted && res.success) {
-          if (res.data) setCategories(res.data);
-          if (res.navItems) setNavItems(res.navItems);
+          const list = res.data || [];
+          setCategories(['Todos', ...list.map((c) => c.name)]);
         }
       } catch (err) {
         console.error('Failed to load dynamic categories:', err);
@@ -52,12 +51,8 @@ export function useNewsFeed({
     };
   }, []);
 
-  // Build a unified set of valid categories from nav items and API data
-  const validCategoriesSet = useMemo(() => {
-    const set = new Set(navItems.map((item) => item.category).filter(Boolean));
-    categories.forEach((cat) => set.add(cat));
-    return set;
-  }, [navItems, categories]);
+  // Build a unified set of valid categories from API data
+  const validCategoriesSet = useMemo(() => new Set(categories), [categories]);
 
   const isSavedTabActive = navSelectedCategory === 'salvos';
 
@@ -102,19 +97,20 @@ export function useNewsFeed({
         if (signal?.aborted) return;
 
         if (res.success) {
-          const list = res.data;
+          const list = res.data || [];
 
           // Append to list on "load more", replace on fresh load
           setArticlesList((prev) => (isLoadMore ? [...prev, ...list] : list));
           setPage(targetPage);
-          setHasMoreArticles(res.meta?.hasMore ?? false);
+          const pagination = res.pagination;
+          const hasMore = pagination
+            ? pagination.page < pagination.totalPages
+            : false;
+          setHasMoreArticles(hasMore);
 
-          // Fetch the trending hero article only on fresh default-feed loads
+          // The first article in the default feed is spotlighted as hero
           if (!isLoadMore && isDefaultFeed) {
-            const trending = await newsService.getTrending();
-            if (!signal?.aborted) {
-              setHeroArticle(trending.data || list[0]);
-            }
+            setHeroArticle(list[0] || null);
           }
         }
       } catch (err) {
@@ -169,7 +165,6 @@ export function useNewsFeed({
 
   return {
     categories,
-    navItems,
     articlesList,
     gridArticles,
     heroArticle,

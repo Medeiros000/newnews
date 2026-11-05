@@ -1,6 +1,17 @@
 import { create } from 'zustand';
 import { newsService } from '@/services';
 
+const parseIcon = (icon) => {
+  if (icon?.startsWith('U+')) {
+    try {
+      return String.fromCodePoint(parseInt(icon.slice(2), 16));
+    } catch {
+      return '📰';
+    }
+  }
+  return icon || '📰';
+};
+
 /**
  * Global navigation store (Zustand).
  * Tracks the active nav item, raw search input, debounced search query,
@@ -18,6 +29,9 @@ export const useNavigationStore = create((set, get) => ({
 
   // Navigation items loaded from the API
   navigationItems: [],
+
+  // Map of category id → display label, built from the same API call
+  categoryMap: new Map(),
 
   /**
    * Sets the active navigation item
@@ -54,9 +68,18 @@ export const useNavigationStore = create((set, get) => ({
   loadNavigation: async () => {
     try {
       const res = await newsService.getCategories();
-      if (res.success && res.navItems) {
-        set({ navigationItems: res.navItems });
-      }
+      const categories = res.data ?? (Array.isArray(res) ? res : []);
+      const navItems = [
+        { id: 'inicio', label: 'Início', icon: '🏠', category: null },
+        ...categories.map((c) => ({
+          id: c.name,
+          label: c.label || c.name,
+          icon: parseIcon(c.icon),
+          category: c.name,
+        })),
+      ];
+      const categoryMap = new Map(categories.map((c) => [c.id, c.label || c.name]));
+      set({ navigationItems: navItems, categoryMap });
     } catch (err) {
       console.error('Failed to load navigation items:', err);
     }
