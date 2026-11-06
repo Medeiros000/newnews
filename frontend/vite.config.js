@@ -9,4 +9,12 @@ export default defineConfig({
       '@': `${import.meta.dirname}/src`,
     },
   },
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://backend:3000',
+        changeOrigin: true,
+      },
+    },
+  },
 });

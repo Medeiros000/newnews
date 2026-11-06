@@ -6,12 +6,6 @@ export const APP_CONFIG = {
   // Base URL for all API requests
   API_BASE_URL: import.meta.env.VITE_API_BASE_URL || '/api',
 
-  // When true, all service calls are intercepted by the local mock adapter
-  IS_MOCK_MODE: import.meta.env.VITE_USE_MOCK !== 'false',
-
-  // Artificial delay (ms) added to mock responses to simulate network latency
-  MOCK_DELAY_MS: Number(import.meta.env.VITE_MOCK_DELAY_MS) || 250,
-
   // Delay (ms) before the search query is considered "settled" for API calls
   DEBOUNCE_SEARCH_MS: 250,
 

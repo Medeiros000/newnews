@@ -11,8 +11,8 @@ import {
   IconArrowRight,
   IconArrowLeft,
 } from '@tabler/icons-react';
-import { useUserStore } from '@/stores';
-import { MOCK_USER_PROFILE } from '@/mocks';
+import { useUserStore, useToastStore } from '@/stores';
+import { userService } from '@/services';
 
 /**
  * Reusable Login Form component.
@@ -28,7 +28,9 @@ export function LoginForm({ titleId, onRegister, showBackLink = false }) {
   // Form and UI state
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const login = useUserStore((state) => state.login);
+  const showToast = useToastStore((state) => state.showToastNotification);
 
   // React Hook Form integration with Zod validation
   const {
@@ -47,11 +49,23 @@ export function LoginForm({ titleId, onRegister, showBackLink = false }) {
   /**
    * Handles authentication form submission
    */
-  const handleFormSubmit = (data) => {
-    // Authentication logic will be implemented here
-    console.log('Dados do formulário válidos:', { ...data, rememberMe });
-    login(MOCK_USER_PROFILE);
-    onRegister?.();
+  const handleFormSubmit = async (data) => {
+    setSubmitting(true);
+    try {
+      const res = await userService.login(data);
+      if (res?.data?.user) {
+        login(res.data.user);
+        onRegister?.();
+      }
+    } catch {
+      showToast(
+        'Serviço de autenticação temporariamente indisponível.',
+        'info',
+        'ℹ️',
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -121,7 +135,7 @@ export function LoginForm({ titleId, onRegister, showBackLink = false }) {
                 className="login-input"
                 placeholder="Digite sua senha"
                 autoComplete="current-password"
-                {...register('senha')}
+                {...register('password')}
               />
               <button
                 type="button"
@@ -137,9 +151,9 @@ export function LoginForm({ titleId, onRegister, showBackLink = false }) {
               </button>
             </div>
             {/* Mensagem de erro da senha */}
-            {errors.senha && (
+            {errors.password && (
               <span className="login-error-message">
-                {errors.senha.message}
+                {errors.password.message}
               </span>
             )}
           </div>
@@ -157,14 +171,13 @@ export function LoginForm({ titleId, onRegister, showBackLink = false }) {
             <a href="#forgot-password">Esqueceu a senha?</a>
           </div>
 
-          {/* Login Submit Button (Desabilitado quando inválido) */}
+          {/* Login Submit Button (Desabilitado quando inválido ou enviando) */}
           <button
             type="submit"
-            onClick={handleFormSubmit}
             className="login-button"
-            disabled={!isValid}
+            disabled={!isValid || submitting}
           >
-            <span>Entrar</span>
+            <span>{submitting ? 'Entrando...' : 'Entrar'}</span>
             <IconArrowRight size={23} />
           </button>
 

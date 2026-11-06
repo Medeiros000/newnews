@@ -102,12 +102,12 @@ export function RegistrationForm({ onSubmit }) {
                 type="text"
                 id="fullName"
                 placeholder="João Maria da Silva"
-                {...register('nome')}
+                {...register('name')}
               />
             </div>
 
-            {errors.nome && (
-              <span className="error">{errors.nome.message}</span>
+            {errors.name && (
+              <span className="error">{errors.name.message}</span>
             )}
           </div>
 
@@ -144,7 +144,7 @@ export function RegistrationForm({ onSubmit }) {
                 type={showPassword ? 'text' : 'password'}
                 id="password"
                 placeholder="xxxxxxxx"
-                {...register('senha')}
+                {...register('password')}
               />
 
               <button
@@ -160,8 +160,8 @@ export function RegistrationForm({ onSubmit }) {
               </button>
             </div>
 
-            {errors.senha && (
-              <span className="error">{errors.senha.message}</span>
+            {errors.password && (
+              <span className="error">{errors.password.message}</span>
             )}
           </div>
 

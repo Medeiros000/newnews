@@ -3,7 +3,8 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Navbar } from '@/components/Navbar';
 import { ToastContainer } from '@/components/ToastContainer';
 import { newsService } from '@/services/newsService';
-import { useToastStore, useBookmarksStore } from '@/stores';
+import { useToastStore, useBookmarksStore, useNavigationStore } from '@/stores';
+import { formatTimeAgo } from '@/utils';
 import {
   IconArrowLeft,
   IconClock,
@@ -32,6 +33,7 @@ export function NewsPage() {
   const showToast = useToastStore((state) => state.showToastNotification);
   const { bookmarkedArticleIds, toggleArticleBookmark, markArticleAsRead } =
     useBookmarksStore();
+  const categoryMap = useNavigationStore((state) => state.categoryMap);
 
   useEffect(() => {
     if (!articleId) {
@@ -48,22 +50,26 @@ export function NewsPage() {
         const res = await newsService.getNewsById(articleId);
         const articleData = res.data;
         setArticle(articleData);
-        markArticleAsRead(Number(articleId));
+        markArticleAsRead(articleId);
 
         // Fetch contextual related articles scored by category, topic, and keyword relevance
         try {
           const relatedRes = await newsService.getRelatedNews(articleId, {
             limit: 3,
           });
-          setRelatedNews(relatedRes.data || []);
+          const list =
+            relatedRes.data?.news ||
+            (Array.isArray(relatedRes.data) ? relatedRes.data : []);
+          setRelatedNews(list);
         } catch {
           // Graceful fallback strategy: fetch top category articles if related endpoint fails
+          const categoryName = categoryMap.get(articleData?.categoryId);
           const fallbackRes = await newsService.getNews({
-            category: articleData?.category,
+            category: categoryName || undefined,
             limit: 6,
           });
           const filtered = (fallbackRes.data || [])
-            .filter((item) => Number(item.id) !== Number(articleId))
+            .filter((item) => String(item.id) !== String(articleId))
             .slice(0, 3);
           setRelatedNews(filtered);
         }
@@ -93,7 +99,7 @@ export function NewsPage() {
   };
 
   const isBookmarked = article
-    ? bookmarkedArticleIds.has(Number(article.id))
+    ? bookmarkedArticleIds.has(article.id)
     : false;
 
   return (
@@ -140,14 +146,14 @@ export function NewsPage() {
               {/* Feature image cover with overlay category badge */}
               <div className="position-relative mb-4 overflow-hidden rounded-4 article-cover-wrapper">
                 <img
-                  src={article.image}
+                  src={article.imageUrl || article.image}
                   alt={article.title}
                   className="img-fluid w-100 object-fit-cover article-cover-img"
                 />
                 <span
                   className={`badge bg-${article.badgeBg || 'primary'} position-absolute bottom-0 start-0 m-3 px-3 py-2 rounded-pill fs-6 shadow-sm`}
                 >
-                  {article.category}
+                  {categoryMap.get(article.categoryId) || article.category || 'Geral'}
                 </span>
               </div>
 
@@ -163,7 +169,7 @@ export function NewsPage() {
                   <div className="d-flex flex-wrap align-items-center gap-3 text-secondary small">
                     <span className="d-inline-flex align-items-center gap-1">
                       <IconClock size={18} className="text-muted" />
-                      <time>{article.publishedTimeAgo || 'Há 2 horas'}</time>
+                      <time>{formatTimeAgo(article.publishedAt)}</time>
                     </span>
                     <span className="d-inline-flex align-items-center gap-1">
                       <IconUser size={18} className="text-muted" />
@@ -199,15 +205,24 @@ export function NewsPage() {
 
               {/* Main article body content paragraphs */}
               <section className="article-body-content">
-                {Array.isArray(article.content) ? (
-                  article.content.map((paragraph, index) => (
-                    <p key={index} className="mb-3 fs-5 lh-base">
-                      {paragraph}
-                    </p>
-                  ))
-                ) : (
-                  <p className="mb-3 fs-5 lh-base">{article.summary}</p>
-                )}
+                {typeof article.content === 'string'
+                  ? article.content
+                      .split(/\n\s*\n/)
+                      .filter(Boolean)
+                      .map((paragraph, index) => (
+                        <p key={index} className="mb-3 fs-5 lh-base">
+                          {paragraph}
+                        </p>
+                      ))
+                  : Array.isArray(article.content)
+                    ? article.content.map((paragraph, index) => (
+                        <p key={index} className="mb-3 fs-5 lh-base">
+                          {paragraph}
+                        </p>
+                      ))
+                    : (
+                      <p className="mb-3 fs-5 lh-base">{article.summary}</p>
+                    )}
               </section>
             </article>
 
@@ -231,7 +246,7 @@ export function NewsPage() {
                     >
                       <div className="card-body p-3 d-flex gap-3 align-items-center">
                         <img
-                          src={item.image}
+                          src={item.imageUrl || item.image}
                           alt={item.title}
                           className="rounded-3 object-fit-cover related-thumb"
                         />
@@ -239,14 +254,14 @@ export function NewsPage() {
                           <span
                             className={`badge bg-${item.badgeBg || 'primary'} bg-opacity-10 text-${item.badgeBg || 'primary'} align-self-start mb-1 rounded-pill`}
                           >
-                            {item.category}
+                            {categoryMap.get(item.categoryId) || item.category || 'Geral'}
                           </span>
                           <h3 className="h6 fw-semibold mb-1 text-truncate-2 text-body">
                             {item.title}
                           </h3>
                           <span className="text-secondary small d-inline-flex align-items-center gap-1">
                             <IconClock size={14} />
-                            {item.publishedTimeAgo}
+                            {formatTimeAgo(item.publishedAt)}
                           </span>
                         </div>
                       </div>

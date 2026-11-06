@@ -1,12 +1,9 @@
 import axios from 'axios';
 import { APP_CONFIG } from '@/utils';
-import { mockAdapter } from '@/mocks';
 
 /**
  * News Data Service layer.
- * Encapsulates HTTP communication with news endpoints.
- * Automatically toggles between the local mock adapter and real REST API endpoints
- * based on the IS_MOCK_MODE application configuration flag.
+ * Communicates directly with backend news REST endpoints.
  */
 const api = axios.create({
   baseURL: APP_CONFIG.API_BASE_URL,
@@ -15,76 +12,62 @@ const api = axios.create({
 
 export const newsService = {
   /**
-   * Fetches a paginated list of news articles, optionally filtered by category or search query.
+   * Fetches a paginated list of news articles.
    * @param {Object} [params] - Query parameters (category, query, page, limit)
    */
   async getNews(params = {}) {
-    if (APP_CONFIG.IS_MOCK_MODE) return mockAdapter.getNews(params);
+    const queryParams = { ...params };
+    if (queryParams.category === 'Todos') {
+      delete queryParams.category;
+    }
 
-    const { data: res } = await api.get('/news', { params });
+    const { data: res } = await api.get('/news', { params: queryParams });
     return {
       success: true,
       data: res.data ?? res,
-      meta: res.meta ?? { total: res.length ?? 0, hasMore: false },
+      pagination: res.pagination,
     };
   },
 
   /**
    * Fetches a single news article by its ID.
-   * @param {string|number} id - The article ID
+   * @param {string} id - The article ID
    */
   async getNewsById(id) {
-    if (APP_CONFIG.IS_MOCK_MODE) return mockAdapter.getNewsById(id);
     const { data: res } = await api.get(`/news/${id}`);
     return { success: true, data: res.data ?? res };
   },
 
   /**
-   * Fetches available news categories and the dynamic navigation items.
+   * Fetches available news categories from the API.
    */
   async getCategories() {
-    if (APP_CONFIG.IS_MOCK_MODE) return mockAdapter.getCategories();
     const { data: res } = await api.get('/categories');
     return { success: true, data: res.data ?? res };
   },
 
   /**
-   * Fetches the current trending/featured article for the hero spotlight.
-   */
-  async getTrending() {
-    if (APP_CONFIG.IS_MOCK_MODE) return mockAdapter.getTrending();
-    const { data: res } = await api.get('/news/trending');
-    return { success: true, data: res.data ?? res };
-  },
-
-  /**
    * Fetches contextually related articles for a given article ID.
-   * Uses the `/news/:id/related` endpoint, with a fallback that queries
-   * articles from the same category if the dedicated endpoint is unavailable.
-   *
-   * @param {string|number} id - The source article ID
+   * Falls back to same-category articles if the /related endpoint is unavailable.
+   * @param {string} id - The source article ID
    * @param {Object} [params] - Additional query parameters (e.g. limit)
    */
   async getRelatedNews(id, params = {}) {
-    if (APP_CONFIG.IS_MOCK_MODE) return mockAdapter.getRelatedNews(id, params);
-
-    const limit = params.limit || 3;
     try {
-      const { data: res } = await api.get(`/news/${id}/related`, {
-        params: { limit, ...params },
-      });
+      const { data: res } = await api.get(`/news/${id}/related`, { params });
       return { success: true, data: res.data ?? res };
     } catch {
-      // Fallback: fetch articles from the same category if /related endpoint is not available
+      // Fallback: fetch articles from the same category
       const { data: articleRes } = await api.get(`/news/${id}`);
       const article = articleRes.data ?? articleRes;
+      const categoryParam = article?.categoryId || article?.category;
       const { data: newsRes } = await api.get('/news', {
-        params: { category: article?.category, limit: limit + 5 },
+        params: { category: categoryParam, limit: (params.limit ?? 3) + 5 },
       });
-      const list = newsRes.data ?? newsRes;
-      const filtered = (Array.isArray(list) ? list : [])
-        .filter((item) => Number(item.id) !== Number(id))
-        .slice(0, limit);
+      const list = newsRes.data ?? (Array.isArray(newsRes) ? newsRes : []);
+      const filtered = list
+        .filter((item) => String(item.id) !== String(id))
+        .slice(0, params.limit ?? 3);
       return { success: true, data: filtered };
     }
   },

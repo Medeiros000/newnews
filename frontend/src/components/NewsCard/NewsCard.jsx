@@ -7,7 +7,8 @@ import {
   IconNews,
 } from '@tabler/icons-react';
 
-import { useUserStore } from '@/stores';
+import { useUserStore, useNavigationStore } from '@/stores';
+import { formatTimeAgo } from '@/utils';
 
 import './NewsCard.css';
 
@@ -34,6 +35,7 @@ export function NewsCard({
 
   // Global state for user context (to show/hide bookmark button)
   const user = useUserStore((state) => state.user);
+  const categoryMap = useNavigationStore((state) => state.categoryMap);
 
   if (!article) return null;
 
@@ -82,7 +84,7 @@ export function NewsCard({
           </div>
         ) : (
           <img
-            src={article.image}
+            src={article.imageUrl || article.image}
             alt={article.title}
             className="news-card-img w-100 h-100 object-fit-cover"
             loading="lazy"
@@ -98,7 +100,7 @@ export function NewsCard({
               article.badgeBg || 'primary'
             } align-self-start`}
           >
-            {article.category}
+            {categoryMap.get(article.categoryId) || article.category || 'Geral'}
           </span>
 
           {isRead && (
@@ -125,7 +127,7 @@ export function NewsCard({
         <div className="d-flex align-items-center justify-content-between mt-auto">
           <div className="d-flex align-items-center gap-1 text-secondary news-card-time">
             <IconClock size={13} />
-            <span>{article.publishedTimeAgo || 'Recente'}</span>
+            <span>{formatTimeAgo(article.publishedAt)}</span>
           </div>
 
           <span className="btn btn-link btn-sm news-card-action p-0 pe-none">
@@ -147,6 +149,7 @@ export function NewsCard({
  */
 export function HeroCard({ article, onSelectArticle }) {
   const [imageError, setImageError] = useState(false);
+  const categoryMap = useNavigationStore((state) => state.categoryMap);
 
   if (!article) return null;
 
@@ -163,7 +166,7 @@ export function HeroCard({ article, onSelectArticle }) {
         </div>
       ) : (
         <img
-          src={article.image}
+          src={article.imageUrl || article.image}
           alt={article.title}
           className="w-100 h-100 object-fit-cover"
           loading="eager"
@@ -177,7 +180,7 @@ export function HeroCard({ article, onSelectArticle }) {
             article.badgeBg || 'primary'
           } align-self-start mb-2`}
         >
-          {article.category}
+          {categoryMap.get(article.categoryId) || article.category || 'Geral'}
         </span>
 
         <h2 className="text-white fw-bold mb-2 hero-card-title">
@@ -196,7 +199,7 @@ export function HeroCard({ article, onSelectArticle }) {
 
         <div className="d-flex align-items-center gap-3">
           <span className="text-white text-opacity-50 news-card-time">
-            {article.publishedTimeAgo || 'Recente'}
+            {formatTimeAgo(article.publishedAt)}
           </span>
 
           <span className="btn btn-light btn-sm rounded-pill fw-semibold px-3 pe-none">
