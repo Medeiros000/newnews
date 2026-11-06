@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { RegistrationForm } from '@/components/RegistrationForm';
+import { userService } from '@/services';
 import './RegisterPage.css';
 
 /**
@@ -16,24 +17,14 @@ export const RegisterPage = () => {
    * @param {Object} formData - Validated user registration details
    */
   const handleRegister = async (formData) => {
-    // Send registration request to API
-    const response = await fetch('/api/auth/register', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(formData),
-    });
-
-    // Error handling for failed registration
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null);
-
-      throw new Error(errorData?.message || 'Erro ao criar conta.');
+    try {
+      await userService.register(formData);
+      navigate('/login');
+    } catch (err) {
+      throw new Error(
+        err?.response?.data?.message || err.message || 'Erro ao criar conta.',
+      );
     }
-
-    // Redirect to login upon successful account creation
-    navigate('/login');
   };
 
   return (

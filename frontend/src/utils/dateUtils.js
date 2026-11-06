@@ -26,3 +26,23 @@ export function formatCurrentDateTime() {
     month: 'long',
   });
 }
+
+/**
+ * Returns a human-readable relative time string in Portuguese (e.g. "Há 10 min", "Há 2 h").
+ *
+ * @param {string|Date} dateString - The ISO date or timestamp
+ * @returns {string} Formatted relative time
+ */
+export function formatTimeAgo(dateString) {
+  if (!dateString) return 'Recente';
+  const diffInMinutes = Math.floor(
+    (Date.now() - new Date(dateString).getTime()) / 60000,
+  );
+  if (diffInMinutes < 1) return 'Agora mesmo';
+  if (diffInMinutes < 60) return `Há ${diffInMinutes} min`;
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  if (diffInHours < 24) return `Há ${diffInHours} h`;
+  const diffInDays = Math.floor(diffInHours / 24);
+  return `Há ${diffInDays} dia${diffInDays > 1 ? 's' : ''}`;
+}
+
