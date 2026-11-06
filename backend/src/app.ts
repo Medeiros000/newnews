@@ -16,12 +16,14 @@ import { RedisService } from './lib/redis.js';
 import { NewsIngestionPipeline } from './services/newsIngestion/NewsIngestionPipeline.js';
 import CategoryRouter from './routes/CategoryRouter.js';
 import CategoryController from './controllers/CategoryController.js';
+import cors from 'cors';
 
 const INGESTION_INTERVAL_MS = 60 * 60 * 1000; // 1 hora
 
 export class App {
     public readonly instance: Application;
     private readonly pipeline: NewsIngestionPipeline;
+    private readonly cors: any;
     private ingestionTimer?: ReturnType<typeof setInterval>;
 
     constructor(
@@ -29,6 +31,7 @@ export class App {
         private readonly cache?: RedisService,
     ) {
         this.instance = express();
+        this.cors = cors();
         this.pipeline = new NewsIngestionPipeline(prisma, cache);
         this.setupMiddlewares();
         this.setupRoutes();
@@ -37,6 +40,7 @@ export class App {
     }
 
     private setupMiddlewares(): void {
+        this.instance.use(this.cors);
         this.instance.use(express.json({ limit: '1mb' }));
     }
 
