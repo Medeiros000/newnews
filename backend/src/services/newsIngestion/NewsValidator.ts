@@ -19,7 +19,7 @@ export class NewsValidator {
     validate(data: unknown): NormalizedNews | null {
         const result = newsValidationSchema.safeParse(data);
         if (!result.success) {
-            console.error(' Falha na validação Zod:', result.error.format());
+            // console.error(' Falha na validação Zod:', result.error.format());
             return null;
         }
         return result.data;
