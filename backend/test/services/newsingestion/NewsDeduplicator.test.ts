@@ -3,9 +3,8 @@ import { PrismaService } from '../../../src/lib/prisma.js';
 import { mockNoticiasEntrada, mockRetornoBancoPrisma } from './newsmocks/news.mock.js';
 
 describe('NewsDeduplicator', () => {
-  let deduplicator: NewsDeduplicator;
-  let prismaMock: any;
-
+ let deduplicator: NewsDeduplicator;
+ let prismaMock: any;
   beforeEach(() => {
     prismaMock = {
       news: {
