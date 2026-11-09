@@ -2,8 +2,8 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import type { Request, Response } from 'express';
 
-import CategoryController from './CategoryController.js';
-import { CategoryMapper } from '../mappers/CategoryMapper.js';
+import CategoryController from './src/controllers/CategoryController.js';
+import { CategoryMapper } from './src/mappers/CategoryMapper.js';
 
 describe('CategoryController', () => {
   let controller: CategoryController;
