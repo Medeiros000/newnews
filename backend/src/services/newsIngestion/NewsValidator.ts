@@ -16,7 +16,7 @@ export const newsValidationSchema = z.object({
 });
 
 export class NewsValidator {
-    validate(data: NormalizedNews): NormalizedNews | null {
+    validate(data: unknown): NormalizedNews | null {
         const result = newsValidationSchema.safeParse(data);
         if (!result.success) {
             console.error(' Falha na validação Zod:', result.error.format());
