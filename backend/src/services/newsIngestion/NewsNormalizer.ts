@@ -1,6 +1,7 @@
 import { CurrentsArticle } from './CurrentsApiClient.js';
 
 export interface NormalizedNews {
+    url?: string;
     category_id: string;
     badge_bg: string;
     title: string;
