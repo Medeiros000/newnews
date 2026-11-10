@@ -21,14 +21,18 @@ export class NewsDeduplicator {
             },
         });
 
+        // Set inicial com o que já está salvo no banco
         const existingTitleSet = new Set(existingRecords.map((r) => r.title));
 
-        // Filtra itens que já existem por título
+        // Filtra itens que já existem no banco ou duplicados no mesmo lote
         return items.filter((item) => {
             if (existingTitleSet.has(item.title)) {
                 console.log(`🔁 Duplicada ignorada (Título): "${item.title}"`);
                 return false;
             }
+            
+            // Adiciona o título ao Set dinamicamente para barrar duplicadas no mesmo lote
+            existingTitleSet.add(item.title);
             return true;
         });
     }
