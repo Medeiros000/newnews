@@ -24,6 +24,7 @@ export function HomePage() {
   const navigate = useNavigate();
   const user = useUserStore((state) => state.user);
   const navSelectedCategory = useNavigationStore(selectNavCategory);
+  const navigationItems = useNavigationStore((state) => state.navigationItems);
   const debouncedSearchQuery = useNavigationStore(
     (state) => state.debouncedSearchQuery,
   );
@@ -67,6 +68,9 @@ export function HomePage() {
   const searchQuery = debouncedSearchQuery;
   const isDefaultCategory =
     effectiveCategory === 'Todos' && !searchQuery.trim() && !isSavedTabActive;
+  const categoryLabel =
+    navigationItems.find((item) => item.category === effectiveCategory)?.label ||
+    effectiveCategory;
 
   return (
     <div className="vh-100 d-flex flex-column overflow-hidden">
@@ -139,7 +143,7 @@ export function HomePage() {
                 <EmptyState
                   searchQuery={searchQuery.trim()}
                   isSavedTabActive={isSavedTabActive}
-                  category={effectiveCategory}
+                  category={categoryLabel}
                   onClearSearch={clearSearch}
                   onResetCategory={() => setActiveCategory('Todos')}
                 />

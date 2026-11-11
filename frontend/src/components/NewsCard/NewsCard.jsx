@@ -127,7 +127,7 @@ export function NewsCard({
         <div className="d-flex align-items-center justify-content-between mt-auto">
           <div className="d-flex align-items-center gap-1 text-secondary news-card-time">
             <IconClock size={13} />
-            <span>{formatTimeAgo(article.publishedAt)}</span>
+            <span>{formatTimeAgo(article.published_at)}</span>
           </div>
 
           <span className="btn btn-link btn-sm news-card-action p-0 pe-none">
@@ -199,7 +199,7 @@ export function HeroCard({ article, onSelectArticle }) {
 
         <div className="d-flex align-items-center gap-3">
           <span className="text-white text-opacity-50 news-card-time">
-            {formatTimeAgo(article.publishedAt)}
+            {formatTimeAgo(article.published_at)}
           </span>
 
           <span className="btn btn-light btn-sm rounded-pill fw-semibold px-3 pe-none">
