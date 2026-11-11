@@ -54,18 +54,16 @@ export function NewsCard({
   return (
     <article
       id={`news-card-${article.id}`}
-      className={`card h-100 border news-card shadow-sm overflow-hidden ${
-        isRead ? 'news-card--read' : ''
-      }`}
+      className={`card h-100 border news-card shadow-sm overflow-hidden ${isRead ? 'news-card--read' : ''
+        }`}
     >
       <div className="news-card-img-wrapper overflow-hidden position-relative">
         {/* Só mostra o botão se existir usuário logado */}
         {user && (
           <button
             type="button"
-            className={`news-card-bookmark-btn ${
-              isBookmarked ? 'is-active' : ''
-            }`}
+            className={`news-card-bookmark-btn ${isBookmarked ? 'is-active' : ''
+              }`}
             onClick={handleBookmark}
             aria-label={bookmarkLabel}
             title={bookmarkLabel}
@@ -96,11 +94,10 @@ export function NewsCard({
       <div className="card-body d-flex flex-column pb-2">
         <div className="d-flex align-items-center gap-2 mb-2">
           <span
-            className={`badge text-bg-${
-              article.badgeBg || 'primary'
-            } align-self-start`}
+            className={`badge text-bg-${article.badgeBg || 'primary'
+              } align-self-start`}
           >
-            {categoryMap[article.categoryId] || article.category || 'Geral'}
+            {categoryMap[article.category_id] || 'Geral'}
           </span>
 
           {isRead && (
@@ -176,11 +173,10 @@ export function HeroCard({ article, onSelectArticle }) {
 
       <div className="hero-overlay position-absolute bottom-0 start-0 w-100 p-4 d-flex flex-column justify-content-end">
         <span
-          className={`badge text-bg-${
-            article.badgeBg || 'primary'
-          } align-self-start mb-2`}
+          className={`badge text-bg-${article.badgeBg || 'primary'
+            } align-self-start mb-2`}
         >
-          {categoryMap[article.categoryId] || article.category || 'Geral'}
+          {categoryMap[article.category_id] || 'Geral'}
         </span>
 
         <h2 className="text-white fw-bold mb-2 hero-card-title">
