@@ -84,7 +84,7 @@ export function NewsCard({
           </div>
         ) : (
           <img
-            src={article.imageUrl || article.image}
+            src={article.imageUrl || article.image_url}
             alt={article.title}
             className="news-card-img w-100 h-100 object-fit-cover"
             loading="lazy"
@@ -100,7 +100,7 @@ export function NewsCard({
               article.badgeBg || 'primary'
             } align-self-start`}
           >
-            {categoryMap.get(article.categoryId) || article.category || 'Geral'}
+            {categoryMap[article.categoryId] || article.category || 'Geral'}
           </span>
 
           {isRead && (
@@ -166,7 +166,7 @@ export function HeroCard({ article, onSelectArticle }) {
         </div>
       ) : (
         <img
-          src={article.imageUrl || article.image}
+          src={article.imageUrl || article.image_url}
           alt={article.title}
           className="w-100 h-100 object-fit-cover"
           loading="eager"
@@ -180,7 +180,7 @@ export function HeroCard({ article, onSelectArticle }) {
             article.badgeBg || 'primary'
           } align-self-start mb-2`}
         >
-          {categoryMap.get(article.categoryId) || article.category || 'Geral'}
+          {categoryMap[article.categoryId] || article.category || 'Geral'}
         </span>
 
         <h2 className="text-white fw-bold mb-2 hero-card-title">

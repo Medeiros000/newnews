@@ -31,7 +31,7 @@ export const useNavigationStore = create((set, get) => ({
   navigationItems: [],
 
   // Map of category id → display label, built from the same API call
-  categoryMap: new Map(),
+  categoryMap: {},
 
   /**
    * Sets the active navigation item
@@ -78,7 +78,9 @@ export const useNavigationStore = create((set, get) => ({
           category: c.name,
         })),
       ];
-      const categoryMap = new Map(categories.map((c) => [c.id, c.label || c.name]));
+      const categoryMap = Object.freeze(
+        Object.fromEntries(categories.map((c) => [c.id, c.label || c.name])),
+      );
       set({ navigationItems: navItems, categoryMap });
     } catch (err) {
       console.error('Failed to load navigation items:', err);

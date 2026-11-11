@@ -63,7 +63,7 @@ export function NewsPage() {
           setRelatedNews(list);
         } catch {
           // Graceful fallback strategy: fetch top category articles if related endpoint fails
-          const categoryName = categoryMap.get(articleData?.categoryId);
+          const categoryName = categoryMap[articleData?.categoryId];
           const fallbackRes = await newsService.getNews({
             category: categoryName || undefined,
             limit: 6,
@@ -146,14 +146,14 @@ export function NewsPage() {
               {/* Feature image cover with overlay category badge */}
               <div className="position-relative mb-4 overflow-hidden rounded-4 article-cover-wrapper">
                 <img
-                  src={article.imageUrl || article.image}
+                  src={article.imageUrl || article.image_url}
                   alt={article.title}
                   className="img-fluid w-100 object-fit-cover article-cover-img"
                 />
                 <span
                   className={`badge bg-${article.badgeBg || 'primary'} position-absolute bottom-0 start-0 m-3 px-3 py-2 rounded-pill fs-6 shadow-sm`}
                 >
-                  {categoryMap.get(article.categoryId) || article.category || 'Geral'}
+                  {categoryMap[article.categoryId] || article.category || 'Geral'}
                 </span>
               </div>
 
@@ -246,7 +246,7 @@ export function NewsPage() {
                     >
                       <div className="card-body p-3 d-flex gap-3 align-items-center">
                         <img
-                          src={item.imageUrl || item.image}
+                          src={item.imageUrl || item.image_url}
                           alt={item.title}
                           className="rounded-3 object-fit-cover related-thumb"
                         />
@@ -254,7 +254,7 @@ export function NewsPage() {
                           <span
                             className={`badge bg-${item.badgeBg || 'primary'} bg-opacity-10 text-${item.badgeBg || 'primary'} align-self-start mb-1 rounded-pill`}
                           >
-                            {categoryMap.get(item.categoryId) || item.category || 'Geral'}
+                            {categoryMap[item.categoryId] || item.category || 'Geral'}
                           </span>
                           <h3 className="h6 fw-semibold mb-1 text-truncate-2 text-body">
                             {item.title}
