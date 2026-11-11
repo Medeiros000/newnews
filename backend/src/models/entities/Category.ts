@@ -3,7 +3,7 @@ export class Category {
 	private name: string;
 	private label: string;
 	private icon: string;
-	
+
 	constructor(id: string, name: string, label: string, icon: string) {
 		this.id = id;
 		this.name = name;
