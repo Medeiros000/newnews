@@ -6,21 +6,21 @@ import { prisma, cache } from './container.js';
 const app = new App(prisma, cache);
 
 const server: Server = app.listen(env.PORT, () => {
-    console.log(`API server listening on http://localhost:${env.PORT}`);
+	console.log(`API server listening on http://localhost:${env.PORT}`);
 });
 
 const shutdown = (signal: 'SIGINT' | 'SIGTERM'): void => {
-    console.log(`Received ${signal}, shutting down...`);
-    app.stopIngestionScheduler();
-    server.close(async (error?: Error) => {
-        if (error) {
-            console.error('Error while closing HTTP server:', error);
-            process.exit(1);
-        }
-        await prisma.$disconnect();
-        console.log('HTTP server closed.');
-        process.exit(0);
-    });
+	console.log(`Received ${signal}, shutting down...`);
+	app.stopIngestionScheduler();
+	server.close(async (error?: Error) => {
+		if (error) {
+			console.error('Error while closing HTTP server:', error);
+			process.exit(1);
+		}
+		await prisma.$disconnect();
+		console.log('HTTP server closed.');
+		process.exit(0);
+	});
 };
 
 process.once('SIGINT', () => shutdown('SIGINT'));

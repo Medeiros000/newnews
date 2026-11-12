@@ -6,22 +6,20 @@ import { HomePage } from '@/pages/HomePage';
 import { NewsPage } from '@/pages/NewsPage';
 import { RegisterPage } from '@/pages/RegisterPage';
 import { LoginPage } from '@/pages/LoginPage';
-import { useUserStore, useNavigationStore } from '@/stores';
+import { useNavigationStore } from '@/stores';
 
 /**
  * Root application component.
- * Bootstraps global application state (user profile and navigation items)
+ * Bootstraps global application state (navigation items)
  * and establishes client-side page routing.
  */
 export function App() {
-  const loadUserData = useUserStore((state) => state.loadUserData);
   const loadNavigation = useNavigationStore((state) => state.loadNavigation);
 
-  // Bootstrap global state on app mount: load user session and navigation items
+  // Bootstrap global state on app mount: load navigation items
   useEffect(() => {
-    loadUserData();
     loadNavigation();
-  }, [loadUserData, loadNavigation]);
+  }, [loadNavigation]);
 
   return (
     <ErrorBoundary>
