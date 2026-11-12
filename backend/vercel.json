@@ -1,9 +1,21 @@
 {
-    "version": 2,
-    "rewrites": [
-        {
-            "source": "/(.*)",
-            "destination": "/api/index"
-        }
-    ]
+  "version": 2,
+  "builds": [
+    {
+      "src": "src/api/index.ts",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/src/api/index.ts"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/jobs/news-ingestion",
+      "schedule": "0 * * * *"
+    }
+  ]
 }
