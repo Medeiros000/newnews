@@ -1,6 +1,5 @@
-import { PrismaService } from './lib/prisma.js';
-import { RedisService } from './lib/redis.js';
-import { env } from './config/env.js';
+import { PrismaService } from './services/PrismaService.js';
+import { createCacheProvider } from './services/cache/createCacheProvider.js';
 
-export const prisma = new PrismaService(env.DATABASE_URL);
-export const cache = new RedisService(env.REDIS_URL);
+export const prisma = PrismaService.getInstance();
+export const cache = createCacheProvider();

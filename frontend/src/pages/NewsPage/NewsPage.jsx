@@ -49,6 +49,7 @@ export function NewsPage() {
 
         const res = await newsService.getNewsById(articleId);
         const articleData = res.data;
+        console.log('Fetched article data:', articleData);
         setArticle(articleData);
         markArticleAsRead(articleId);
 
@@ -63,7 +64,7 @@ export function NewsPage() {
           setRelatedNews(list);
         } catch {
           // Graceful fallback strategy: fetch top category articles if related endpoint fails
-          const categoryName = categoryMap.get(articleData?.categoryId);
+          const categoryName = categoryMap[articleData?.categoryId];
           const fallbackRes = await newsService.getNews({
             category: categoryName || undefined,
             limit: 6,
@@ -82,7 +83,7 @@ export function NewsPage() {
 
     fetchArticleData();
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [articleId, markArticleAsRead]);
+  }, [articleId, categoryMap, markArticleAsRead]);
 
   const handleShare = () => {
     const currentUrl = window.location.href;
@@ -146,14 +147,14 @@ export function NewsPage() {
               {/* Feature image cover with overlay category badge */}
               <div className="position-relative mb-4 overflow-hidden rounded-4 article-cover-wrapper">
                 <img
-                  src={article.imageUrl || article.image}
+                  src={article.imageUrl || article.image_url}
                   alt={article.title}
                   className="img-fluid w-100 object-fit-cover article-cover-img"
                 />
                 <span
                   className={`badge bg-${article.badgeBg || 'primary'} position-absolute bottom-0 start-0 m-3 px-3 py-2 rounded-pill fs-6 shadow-sm`}
                 >
-                  {categoryMap.get(article.categoryId) || article.category || 'Geral'}
+                  {categoryMap[article.category_id] || 'Geral'}
                 </span>
               </div>
 
@@ -161,7 +162,7 @@ export function NewsPage() {
               <header className="mb-4">
                 <h1 className="fw-bold mb-3 article-title">{article.title}</h1>
                 <p className="lead text-secondary mb-3 article-summary">
-                  {article.summary}
+                  {article.description}
                 </p>
 
                 {/* Article publication metadata and user action toolbar */}
@@ -169,7 +170,7 @@ export function NewsPage() {
                   <div className="d-flex flex-wrap align-items-center gap-3 text-secondary small">
                     <span className="d-inline-flex align-items-center gap-1">
                       <IconClock size={18} className="text-muted" />
-                      <time>{formatTimeAgo(article.publishedAt)}</time>
+                      <time>{formatTimeAgo(article.published_at)}</time>
                     </span>
                     <span className="d-inline-flex align-items-center gap-1">
                       <IconUser size={18} className="text-muted" />
@@ -221,7 +222,7 @@ export function NewsPage() {
                         </p>
                       ))
                     : (
-                      <p className="mb-3 fs-5 lh-base">{article.summary}</p>
+                      <p className="mb-3 fs-5 lh-base">{article.description}</p>
                     )}
               </section>
             </article>
@@ -246,7 +247,7 @@ export function NewsPage() {
                     >
                       <div className="card-body p-3 d-flex gap-3 align-items-center">
                         <img
-                          src={item.imageUrl || item.image}
+                          src={item.imageUrl || item.image_url}
                           alt={item.title}
                           className="rounded-3 object-fit-cover related-thumb"
                         />
@@ -254,14 +255,14 @@ export function NewsPage() {
                           <span
                             className={`badge bg-${item.badgeBg || 'primary'} bg-opacity-10 text-${item.badgeBg || 'primary'} align-self-start mb-1 rounded-pill`}
                           >
-                            {categoryMap.get(item.categoryId) || item.category || 'Geral'}
+                            {categoryMap[item.category_id] || 'Geral'}
                           </span>
                           <h3 className="h6 fw-semibold mb-1 text-truncate-2 text-body">
                             {item.title}
                           </h3>
                           <span className="text-secondary small d-inline-flex align-items-center gap-1">
                             <IconClock size={14} />
-                            {formatTimeAgo(item.publishedAt)}
+                            {formatTimeAgo(item.published_at)}
                           </span>
                         </div>
                       </div>

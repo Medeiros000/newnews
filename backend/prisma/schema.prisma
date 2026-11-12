@@ -21,14 +21,14 @@ model Category {
 model News {
     id           String   @id @default(uuid())
     category_id  String
-    badge_bg     String
     title        String
-    summary      String
-    content      String
-    image_url    String
-    published_at DateTime
+    description  String
+    url          String   @unique
     author       String
+    image_url    String
+    language     String
     source       String
+    published_at DateTime
 
     category Category @relation(fields: [category_id], references: [id])
 

@@ -1,26 +1,22 @@
-
 import { Router, type Request, type Response } from 'express';
 
 export class IndexRouter {
-    public readonly router: Router;
+	public readonly router: Router;
 
-    constructor() {
-        this.router = Router();
-        this.setupRoutes();
-    }
+	constructor() {
+		this.router = Router();
+		this.setupRoutes();
+	}
 
-    private setupRoutes(): void {
-        this.router.get('/', this.getIndex);
-    }
+	private setupRoutes(): void {
+		this.router.get('/', this.getIndex);
+	}
 
-    private getIndex(
-        _request: Request,
-        response: Response,
-    ): void {
-        response.type('html').send(IndexRouter.htmlContent);
-    }
+	private getIndex(_request: Request, response: Response): void {
+		response.type('html').send(IndexRouter.htmlContent);
+	}
 
-    private static readonly htmlContent = `<!DOCTYPE html>
+	private static readonly htmlContent = `<!DOCTYPE html>
 <html lang="pt-BR">
     <head>	
         <meta charset="UTF-8">

@@ -12,25 +12,6 @@ const api = axios.create({
 
 export const userService = {
   /**
-   * Fetches the authenticated user's profile data.
-   * Treats visitor as guest when endpoint is unauthenticated or unavailable.
-   * @returns {Promise<{ success: boolean, data: Object|null }>}
-   */
-  async getUserProfile() {
-    const { data: res } = await api.get('/user/profile');
-    return { success: true, data: res.data ?? res };
-  },
-
-  /**
-   * Fetches the authenticated user's notifications list.
-   * @returns {Promise<{ success: boolean, data: Array }>}
-   */
-  async getUserNotifications() {
-    const { data: res } = await api.get('/user/notifications');
-    return { success: true, data: res.data ?? res };
-  },
-
-  /**
    * Sends user login credentials to authentication endpoint.
    * @param {{ email: string, password: string }} credentials
    */

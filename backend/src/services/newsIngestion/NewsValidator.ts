@@ -1,27 +1,26 @@
-// backend/src/services/newsIngestion/NewsValidator.ts
 import { z } from 'zod';
 import { NormalizedNews } from './NewsNormalizer.js';
 
 export const newsValidationSchema = z.object({
-    category_id: z.string().uuid('category_id inválido'),
-    badge_bg: z.string().max(20).default('bg-blue-500'),
-    title: z.string().min(1).max(255),
-    summary: z.string().min(1),
-    content: z.string().min(1),
-    image_url: z.string().url().max(2048),
-    published_at: z.date(),
-    author: z.string().max(120).default('Redação'),
-    category: z.string().max(120).optional(),
-    source: z.string().max(120),
+	id: z.string().min(1).optional(),
+	title: z.string().min(1).max(255),
+	description: z.string().min(1).max(1000),
+	url: z.url().max(2048).optional(),
+	author: z.string().min(1).max(120),
+	image_url: z.url().max(2048),
+	language: z.string().min(1).max(10),
+	category: z.string().min(1).max(120),
+	published_at: z.date(),
+	source: z.string().min(1).max(120),
 });
 
 export class NewsValidator {
-    validate(data: unknown): NormalizedNews | null {
-        const result = newsValidationSchema.safeParse(data);
-        if (!result.success) {
-            // console.error(' Falha na validação Zod:', result.error.format());
-            return null;
-        }
-        return result.data;
-    }
+	validate(data: NormalizedNews): NormalizedNews | null {
+		const result = newsValidationSchema.safeParse(data);
+		if (!result.success) {
+			console.error(' Falha na validação Zod:', result.error.format());
+			return null;
+		}
+		return result.data;
+	}
 }

@@ -54,18 +54,16 @@ export function NewsCard({
   return (
     <article
       id={`news-card-${article.id}`}
-      className={`card h-100 border news-card shadow-sm overflow-hidden ${
-        isRead ? 'news-card--read' : ''
-      }`}
+      className={`card h-100 border news-card shadow-sm overflow-hidden ${isRead ? 'news-card--read' : ''
+        }`}
     >
       <div className="news-card-img-wrapper overflow-hidden position-relative">
         {/* Só mostra o botão se existir usuário logado */}
         {user && (
           <button
             type="button"
-            className={`news-card-bookmark-btn ${
-              isBookmarked ? 'is-active' : ''
-            }`}
+            className={`news-card-bookmark-btn ${isBookmarked ? 'is-active' : ''
+              }`}
             onClick={handleBookmark}
             aria-label={bookmarkLabel}
             title={bookmarkLabel}
@@ -84,7 +82,7 @@ export function NewsCard({
           </div>
         ) : (
           <img
-            src={article.imageUrl || article.image}
+            src={article.imageUrl || article.image_url}
             alt={article.title}
             className="news-card-img w-100 h-100 object-fit-cover"
             loading="lazy"
@@ -96,11 +94,10 @@ export function NewsCard({
       <div className="card-body d-flex flex-column pb-2">
         <div className="d-flex align-items-center gap-2 mb-2">
           <span
-            className={`badge text-bg-${
-              article.badgeBg || 'primary'
-            } align-self-start`}
+            className={`badge text-bg-${article.badgeBg || 'primary'
+              } align-self-start`}
           >
-            {categoryMap.get(article.categoryId) || article.category || 'Geral'}
+            {categoryMap[article.category_id] || 'Geral'}
           </span>
 
           {isRead && (
@@ -127,7 +124,7 @@ export function NewsCard({
         <div className="d-flex align-items-center justify-content-between mt-auto">
           <div className="d-flex align-items-center gap-1 text-secondary news-card-time">
             <IconClock size={13} />
-            <span>{formatTimeAgo(article.publishedAt)}</span>
+            <span>{formatTimeAgo(article.published_at)}</span>
           </div>
 
           <span className="btn btn-link btn-sm news-card-action p-0 pe-none">
@@ -166,7 +163,7 @@ export function HeroCard({ article, onSelectArticle }) {
         </div>
       ) : (
         <img
-          src={article.imageUrl || article.image}
+          src={article.imageUrl || article.image_url}
           alt={article.title}
           className="w-100 h-100 object-fit-cover"
           loading="eager"
@@ -176,11 +173,10 @@ export function HeroCard({ article, onSelectArticle }) {
 
       <div className="hero-overlay position-absolute bottom-0 start-0 w-100 p-4 d-flex flex-column justify-content-end">
         <span
-          className={`badge text-bg-${
-            article.badgeBg || 'primary'
-          } align-self-start mb-2`}
+          className={`badge text-bg-${article.badgeBg || 'primary'
+            } align-self-start mb-2`}
         >
-          {categoryMap.get(article.categoryId) || article.category || 'Geral'}
+          {categoryMap[article.category_id] || 'Geral'}
         </span>
 
         <h2 className="text-white fw-bold mb-2 hero-card-title">
@@ -199,7 +195,7 @@ export function HeroCard({ article, onSelectArticle }) {
 
         <div className="d-flex align-items-center gap-3">
           <span className="text-white text-opacity-50 news-card-time">
-            {formatTimeAgo(article.publishedAt)}
+            {formatTimeAgo(article.published_at)}
           </span>
 
           <span className="btn btn-light btn-sm rounded-pill fw-semibold px-3 pe-none">

@@ -1,7 +1,5 @@
 import { create } from 'zustand';
 
-import { userService } from '@/services';
-
 /**
  * Global user store (Zustand).
  * Manages authentication state, user profile data, and notifications.
@@ -34,31 +32,6 @@ export const useUserStore = create((set) => ({
    */
   logout: () => {
     set({ user: null, notifications: [] });
-  },
-
-  /**
-   * Fetches user profile and notifications in parallel from the API.
-   * On failure, resets the user to null.
-   */
-  loadUserData: async () => {
-    set({ isLoadingUser: true });
-
-    try {
-      const [profileRes, notifRes] = await Promise.all([
-        userService.getUserProfile(),
-        userService.getUserNotifications(),
-      ]);
-
-      set({
-        user: profileRes.success ? profileRes.data : null,
-        notifications: notifRes.success ? notifRes.data : [],
-        isLoadingUser: false,
-      });
-    } catch (err) {
-      console.error('Failed to load user data:', err);
-
-      set({ user: null, isLoadingUser: false });
-    }
   },
 
   /**

@@ -1,37 +1,75 @@
-import { PrismaService } from '../../lib/prisma.js';
-import { RedisService } from '../../lib/redis.js';
+import { PrismaService } from '../PrismaService.js';
+import { Category } from '../../models/entities/Category.js';
 import { NormalizedNews } from './NewsNormalizer.js';
+import { CategoryMapper } from '../../mappers/CategoryMapper.js';
 
 export class NewsRepository {
-    constructor(
-        private readonly prisma: PrismaService,
-        private readonly cache?: RedisService,
-    ) {}
+	private readonly prisma: PrismaService;
+	private categories: ReadonlyArray<Category> = Object.freeze([]);
+	private categoriesInitialization?: Promise<void>;
 
-    async save(newsItem: NormalizedNews) {
-        console.log('🔍 Verificando se a categoria existe:', newsItem.category);
-        const categoryExists = await this.prisma.category.findUnique({
-            where: { name: newsItem.category },
-        });
-        console.log('🔍 Categoria encontrada:', categoryExists);
-        const saved = await this.prisma.news.create({
-            data: {
-                category_id: categoryExists?.id || newsItem.category_id,
-                badge_bg: newsItem.badge_bg,
-                title: newsItem.title,
-                summary: newsItem.summary,
-                content: newsItem.content,
-                image_url: newsItem.image_url,
-                published_at: newsItem.published_at,
-                author: newsItem.author,
-                source: newsItem.source,
-            },
-        });
+	constructor(prisma: PrismaService = PrismaService.getInstance()) {
+		this.prisma = prisma;
+	}
 
-        if (this.cache) {
-            await this.cache.set(`news:${saved.id}`, saved, 300);
-        }
+	async initialize(): Promise<void> {
+		if (!this.categoriesInitialization) {
+			this.categoriesInitialization = this.loadCategories();
+		}
 
-        return saved;
-    }
+		await this.categoriesInitialization;
+	}
+
+	private async loadCategories(): Promise<void> {
+		const categories = (await this.prisma.category.findMany()).map(CategoryMapper.fromPrisma);
+		this.categories = Object.freeze(categories);
+	}
+
+	private getCategoryId(categoryName: string) {
+		const category = this.categories.find((cat) => cat.getName() === categoryName);
+		if (!category) {
+			throw new Error(`Categoria não encontrada: ${categoryName}`);
+		}
+		return category.getId();
+	}
+
+	async saveMany(newsItems: NormalizedNews[]) {
+		await this.initialize();
+
+		const itemsWithUrls = newsItems.map((item) => {
+			if (!item.url) {
+				throw new Error(`Notícia sem URL não pode ser persistida: ${item.title ?? 'sem título'}`);
+			}
+			return { ...item, url: item.url };
+		});
+		const existingNews = await this.prisma.news.findMany({
+			where: { url: { in: itemsWithUrls.map((item) => item.url) } },
+			select: { url: true },
+		});
+		const existingUrls = new Set(existingNews.map((item) => item.url));
+		const batchUrls = new Set<string>();
+		const data = itemsWithUrls
+			.filter((item) => {
+				if (existingUrls.has(item.url) || batchUrls.has(item.url)) {
+					return false;
+				}
+				batchUrls.add(item.url);
+				return true;
+			})
+			.map((item) => ({
+				...(item.id ? { id: item.id } : {}),
+				category_id: this.getCategoryId(item.category),
+				title: item.title || item.description || '',
+				description: item.description || '',
+				url: item.url,
+				author: item.author,
+				image_url: item.image_url || 'https://via.placeholder.com/800x400',
+				language: item.language || 'pt-BR',
+				source: item.source,
+				published_at: item.published_at,
+			}));
+		const result = data.length === 0 ? { count: 0 } : await this.prisma.news.createMany({ data });
+		console.log(`✅ ${result.count} notícias salvas no banco de dados.`);
+		return result;
+	}
 }

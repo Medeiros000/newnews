@@ -1,22 +1,19 @@
 import { News } from '../models/entities/News.js';
+import type { News as PrismaNews } from '../../generated/prisma/client.js';
 
 export class NewsMapper {
-  static toDomain(raw: any): News {
+  static fromPrisma(prismaNews: PrismaNews): News {
     return new News(
-      raw.id,
-      raw.category_id,
-      raw.title,
-      raw.summary,
-      raw.content,
-      raw.image_url,
-      raw.published_at,
-      raw.author,
-      raw.source,
-      raw.badge_bg
+      prismaNews.id,
+      prismaNews.category_id,
+      prismaNews.title,
+      prismaNews.description,
+      prismaNews.url,
+      prismaNews.author,
+      prismaNews.image_url,
+      prismaNews.language,
+      prismaNews.source,
+      prismaNews.published_at,
     );
-  }
-
-  static toDomainList(rawList: any[]): News[] {
-    return rawList.map(item => NewsMapper.toDomain(item));
   }
 }

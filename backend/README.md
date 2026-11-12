@@ -32,7 +32,7 @@ npm run db:generate
 npm run db:migrate
 ```
 
-Inicie o servidor:
+Inicie a API:
 
 ```bash
 npm run dev
@@ -44,6 +44,16 @@ A API estará disponível em:
 http://localhost:3000
 ```
 
+Em outro processo, inicie o worker de ingestão:
+
+```bash
+npm run dev:worker
+```
+
+O worker executa uma ingestão imediatamente ao iniciar e depois a cada hora. Se uma
+execução ainda estiver em andamento quando o intervalo vencer, o próximo ciclo é
+ignorado para evitar concorrência.
+
 > **Banco de dados:** o SQLite será criado em `dev.db`.
 
 ---
@@ -53,8 +63,10 @@ http://localhost:3000
 | Script                | O que faz                                   |
 | --------------------- | ------------------------------------------- |
 | `npm run dev`         | Inicia o servidor de desenvolvimento        |
+| `npm run dev:worker` | Inicia o worker de ingestão em desenvolvimento |
 | `npm run build`       | Compila o projeto para produção             |
 | `npm start`           | Executa o projeto compilado                 |
+| `npm run start:worker` | Executa o worker compilado                |
 | `npm run db:generate` | Gera o Prisma Client                        |
 | `npm run db:migrate`  | Cria e aplica migrations                    |
 | `npm run db:studio`   | Abre o Prisma Studio                        |
@@ -79,7 +91,7 @@ http://localhost:3000
 
 ## 📰 Ingestão de Notícias (Currents API)
 
-O backend busca notícias automaticamente da **[Currents API](https://currentsapi.services/)** através de um pipeline de ingestão que roda ao iniciar o servidor e depois **a cada hora**.
+O worker de ingestão busca notícias automaticamente da **[Currents API](https://currentsapi.services/)** através de um pipeline que roda ao iniciar o worker e depois **a cada hora**.
 
 ### Pipeline
 
@@ -278,8 +290,11 @@ backend/
 │   │       ├── NewsRepository.ts
 │   │       └── NewsIngestionPipeline.ts
 │   ├── container.ts       # Injeção de dependências (prisma, cache)
-│   ├── app.ts             # Configuração do Express + agendador de ingestão
-│   └── server.ts          # Inicialização do servidor HTTP
+│   ├── app.ts             # Configuração do Express
+│   ├── server.ts          # Inicialização do servidor HTTP
+│   ├── worker.ts          # Inicialização do worker de ingestão
+│   └── workers/
+│       └── NewsIngestionWorker.ts # Agendamento da ingestão
 │
 ├── .env.example
 ├── package.json
@@ -298,8 +313,9 @@ backend/
 * **`config/`** → concentra configurações e variáveis de ambiente.
 * **`lib/`** → concentra instâncias e dependências compartilhadas.
 * **`services/newsIngestion/`** → pipeline de busca e persistência de notícias.
-* **`app.ts`** → configura o Express e agenda a ingestão automática.
+* **`app.ts`** → configura o Express e as rotas HTTP.
 * **`server.ts`** → inicializa o servidor HTTP.
+* **`worker.ts`** → inicializa o worker de ingestão.
 
 ### Nomenclatura
 
