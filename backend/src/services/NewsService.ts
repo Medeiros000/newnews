@@ -1,7 +1,8 @@
 import { QueryOptions } from '../queries/QueryOptions.js';
 import { CreateNewsDto } from '../dtos/CreateNewsDto.js';
 import { PrismaService } from './PrismaService.js';
-import { RedisService } from './RedisService.js';
+import type { CacheProvider } from './cache/CacheProvider.js';
+import { createCacheProvider } from './cache/createCacheProvider.js';
 import { INewsService } from './interfaces/INewsService.js';
 import { News } from '../models/entities/News.js';
 import { NewsMapper } from '../mappers/NewsMapper.js';
@@ -9,7 +10,7 @@ import { NewsMapper } from '../mappers/NewsMapper.js';
 export class NewsService implements INewsService {
   public constructor(
     private readonly prisma: PrismaService = PrismaService.getInstance(),
-    private readonly redis: RedisService = RedisService.getInstance(),
+    private readonly cache: CacheProvider = createCacheProvider(),
   ) {}
 
   public async getNews(queryOptions: QueryOptions): Promise<News[]> {
@@ -28,7 +29,7 @@ export class NewsService implements INewsService {
       query?.toLowerCase() || 'all',
     )}category:${category || 'all'}:page:${page}:limit:${limit}`;
 
-    const cachedData = await this.redis.get<News[]>(cacheKey);
+    const cachedData = await this.cache.get<News[]>(cacheKey);
     if (cachedData) {
       return cachedData;
     }
@@ -54,7 +55,7 @@ export class NewsService implements INewsService {
       })
     ).map(NewsMapper.fromPrisma);
 
-    await this.redis.set(cacheKey, news, 180);
+    await this.cache.set(cacheKey, news, 180);
     return news;
   }
 
@@ -69,7 +70,7 @@ export class NewsService implements INewsService {
       },
     });
 
-    await this.redis.delByPattern('news:list:*');
+    await this.cache.delByPattern('news:list:*');
     return NewsMapper.fromPrisma(savedNews);
   }
 
@@ -80,7 +81,7 @@ export class NewsService implements INewsService {
     }
 
     const cacheKey = `news:${id}`;
-    const cachedNews = await this.redis.get<News>(cacheKey);
+    const cachedNews = await this.cache.get<News>(cacheKey);
     if (cachedNews) {
       return cachedNews;
     }
@@ -93,7 +94,7 @@ export class NewsService implements INewsService {
     }
 
     const mappedNews = NewsMapper.fromPrisma(news);
-    await this.redis.set(cacheKey, mappedNews, 300);
+    await this.cache.set(cacheKey, mappedNews, 300);
     return mappedNews;
   }
 
@@ -105,7 +106,7 @@ export class NewsService implements INewsService {
 
     const limit = queryOptions.limit && queryOptions.limit > 0 ? queryOptions.limit : 4;
     const cacheKey = `news:${id}:related:limit:${limit}`;
-    const cachedNews = await this.redis.get<News[]>(cacheKey);
+    const cachedNews = await this.cache.get<News[]>(cacheKey);
     if (cachedNews) {
       return cachedNews;
     }
@@ -127,7 +128,7 @@ export class NewsService implements INewsService {
       orderBy: { published_at: 'desc' },
     });
     const mappedNews = relatedNews.map(NewsMapper.fromPrisma);
-    await this.redis.set(cacheKey, mappedNews, 300);
+    await this.cache.set(cacheKey, mappedNews, 300);
     return mappedNews;
   }
 }

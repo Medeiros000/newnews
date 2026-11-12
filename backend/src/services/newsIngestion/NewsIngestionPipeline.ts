@@ -2,17 +2,18 @@ import { CurrentsApiClient } from './CurrentsApiClient.js';
 import { NewsNormalizer } from './NewsNormalizer.js';
 import { NewsValidator } from './NewsValidator.js';
 import { NewsRepository } from './NewsRepository.js';
-import { RedisService } from '../RedisService.js';
+import type { CacheProvider } from '../cache/CacheProvider.js';
+import { createCacheProvider } from '../cache/createCacheProvider.js';
 
 export class NewsIngestionPipeline {
 	private readonly repository: NewsRepository;
 	private readonly apiClient: CurrentsApiClient;
 	private readonly normalizer: NewsNormalizer;
 	private readonly validator: NewsValidator;
-	private readonly redis: RedisService;
+	private readonly cache: CacheProvider;
 
-	constructor() {
-		this.redis = RedisService.getInstance();
+	constructor(cache: CacheProvider = createCacheProvider()) {
+		this.cache = cache;
 		this.repository = new NewsRepository();
 		this.apiClient = new CurrentsApiClient();
 		this.normalizer = new NewsNormalizer();
@@ -43,8 +44,8 @@ export class NewsIngestionPipeline {
 		const savedCount = result.count || 0;
 
 		// Invalida cache de listagem caso novas notícias tenham sido adicionadas
-		if (savedCount > 0 && this.redis) {
-			await this.redis.delByPattern('news:list:*');
+		if (savedCount > 0) {
+			await this.cache.delByPattern('news:list:*');
 			console.log('🧹 Cache de listagem de notícias invalidado com sucesso.');
 		}
 

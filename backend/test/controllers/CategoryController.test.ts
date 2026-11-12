@@ -2,27 +2,18 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import type { Request, Response } from 'express';
 
-import CategoryController from '../../src/controllers/CategoryController.js';
-import { CategoryMapper } from '../../src/mappers/CategoryMapper.js';
+import { CategoryController } from '../../src/controllers/CategoryController.js';
 
 describe('CategoryController', () => {
   let controller: CategoryController;
 
-  let prisma: any;
-  let cache: any;
+  let service: any;
   let response: any;
 
   beforeEach(() => {
-    prisma = {
-      category: {
-        findMany: jest.fn(),
-        findUnique: jest.fn(),
-      },
-    };
-
-    cache = {
-      get: jest.fn(),
-      set: jest.fn(),
+    service = {
+      getAllCategories: jest.fn(),
+      getCategoryById: jest.fn(),
     };
 
     response = {
@@ -30,42 +21,28 @@ describe('CategoryController', () => {
       json: jest.fn().mockReturnThis(),
     };
 
-    controller = new CategoryController(prisma, cache);
+    controller = new CategoryController(service);
   });
 
   describe('get()', () => {
-    it('deve buscar categorias no banco quando não existirem no cache', async () => {
+    it('deve retornar categorias obtidas pelo serviço', async () => {
       // Arrange
       const categories = [
         { id: '1', name: 'Tecnologia' },
         { id: '2', name: 'Esportes' },
       ];
 
-      cache.get.mockResolvedValue(null);
-      prisma.category.findMany.mockResolvedValue(categories);
-
-      const mapperSpy = jest.spyOn(
-        CategoryMapper,
-        'fromPrisma',
-      );
+      service.getAllCategories.mockResolvedValue(categories);
 
       // Act
-      await controller.get(
+      await controller.getAllCategories(
         {} as Request,
         response as Response,
       );
 
       // Assert
-      expect(cache.get).toHaveBeenCalledWith('categories:list');
-
-      expect(prisma.category.findMany).toHaveBeenCalledTimes(1);
-
-      expect(mapperSpy).toHaveBeenCalledTimes(2);
-
-      expect(cache.set).toHaveBeenCalledWith(
-        'categories:list',
-        expect.any(Array),
-        300,
+      expect(service.getAllCategories).toHaveBeenCalledWith(
+        expect.objectContaining({}),
       );
 
       expect(response.status).toHaveBeenCalledWith(200);
@@ -74,31 +51,25 @@ describe('CategoryController', () => {
         success: true,
         data: expect.any(Array),
       });
-
-      mapperSpy.mockRestore();
     });
 
-    it('deve retornar categorias diretamente do cache', async () => {
+    it('deve preservar categorias retornadas pelo serviço', async () => {
       // Arrange
       const cachedCategories = [
         { id: '1', name: 'Tecnologia' },
         { id: '2', name: 'Esportes' },
       ];
 
-      cache.get.mockResolvedValue(cachedCategories);
+      service.getAllCategories.mockResolvedValue(cachedCategories);
 
       // Act
-      await controller.get(
+      await controller.getAllCategories(
         {} as Request,
         response as Response,
       );
 
       // Assert
-      expect(cache.get).toHaveBeenCalledWith('categories:list');
-
-      expect(prisma.category.findMany).not.toHaveBeenCalled();
-
-      expect(cache.set).not.toHaveBeenCalled();
+      expect(service.getAllCategories).toHaveBeenCalledTimes(1);
 
       expect(response.status).toHaveBeenCalledWith(200);
 
@@ -117,14 +88,7 @@ describe('CategoryController', () => {
         name: 'Tecnologia',
       };
 
-      cache.get.mockResolvedValue(null);
-
-      prisma.category.findUnique.mockResolvedValue(category);
-
-      const mapperSpy = jest.spyOn(
-        CategoryMapper,
-        'fromPrisma',
-      );
+      service.getCategoryById.mockResolvedValue(category);
 
       const request = {
         params: {
@@ -133,23 +97,11 @@ describe('CategoryController', () => {
       } as Request<{ id: string }>;
 
       // Act
-      await controller.getById(request, response as Response);
+      await controller.getCategoryById(request, response as Response);
 
       // Assert
-      expect(cache.get).toHaveBeenCalledWith('categories:1');
-
-      expect(prisma.category.findUnique).toHaveBeenCalledWith({
-        where: {
-          id: '1',
-        },
-      });
-
-      expect(mapperSpy).toHaveBeenCalledTimes(1);
-
-      expect(cache.set).toHaveBeenCalledWith(
-        'categories:1',
-        expect.any(Object),
-        300,
+      expect(service.getCategoryById).toHaveBeenCalledWith(
+        expect.objectContaining({ id: '1' }),
       );
 
       expect(response.status).toHaveBeenCalledWith(200);
@@ -158,20 +110,11 @@ describe('CategoryController', () => {
         success: true,
         data: expect.any(Object),
       });
-
-      mapperSpy.mockRestore();
     });
 
     it('deve retornar erro quando a categoria não for encontrada', async () => {
       // Arrange
-      cache.get.mockResolvedValue(null);
-
-      prisma.category.findUnique.mockResolvedValue(null);
-
-      const mapperSpy = jest.spyOn(
-        CategoryMapper,
-        'fromPrisma',
-      );
+      service.getCategoryById.mockResolvedValue(null);
 
       const request = {
         params: {
@@ -180,28 +123,18 @@ describe('CategoryController', () => {
       } as Request<{ id: string }>;
 
       // Act
-      await controller.getById(request, response as Response);
+      await controller.getCategoryById(request, response as Response);
 
       // Assert
-      expect(cache.get).toHaveBeenCalledWith('categories:999');
-
-      expect(prisma.category.findUnique).toHaveBeenCalledWith({
-        where: {
-          id: '999',
-        },
-      });
-
-      expect(mapperSpy).not.toHaveBeenCalled();
-
-      expect(cache.set).not.toHaveBeenCalled();
+      expect(service.getCategoryById).toHaveBeenCalledWith(
+        expect.objectContaining({ id: '999' }),
+      );
 
       expect(response.status).toHaveBeenCalledWith(400);
 
       expect(response.json).toHaveBeenCalledWith({
         message: 'Categoria não encontrada.',
       });
-
-      mapperSpy.mockRestore();
     });
   });
 });
