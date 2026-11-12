@@ -1,6 +1,9 @@
-import { createNewsIngestionWorker } from './workers/NewsIngestionWorker.js';
-import { prisma, cache } from './container.js';
+import { createNewsIngestionWorker } from './NewsIngestionWorker.js';
+import { PrismaService } from '../services/PrismaService.js';
+import { createCacheProvider } from '../services/cache/createCacheProvider.js';
 
+const prisma = PrismaService.getInstance();
+const cache = createCacheProvider();
 const worker = createNewsIngestionWorker(cache);
 worker.start();
 

@@ -1,5 +1,5 @@
 // backend/test/services/newsingestion/news.mock.ts
-import { NormalizedNews } from '../../../../src/services/newsIngestion/NewsNormalizer.js';
+import { NormalizedNews } from '../../../../src/workers/ingestion/NewsNormalizer.js';
 
 export const mockNoticiasEntrada: NormalizedNews[] = [
   { title: 'TypeScript 5.5 Lançado', url: 'https://site.com/ts1' },          

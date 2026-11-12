@@ -1,4 +1,4 @@
-import { NewsValidator } from '../../../src/services/newsIngestion/NewsValidator.js';
+import { NewsValidator } from '../../../src/workers/ingestion/NewsValidator.js';
 
 describe('NewsValidator', () => {
 	const validator = new NewsValidator();

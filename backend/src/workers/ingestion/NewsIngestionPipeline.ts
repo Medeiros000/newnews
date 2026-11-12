@@ -2,8 +2,8 @@ import { CurrentsApiClient } from './CurrentsApiClient.js';
 import { NewsNormalizer } from './NewsNormalizer.js';
 import { NewsValidator } from './NewsValidator.js';
 import { NewsRepository } from './NewsRepository.js';
-import type { CacheProvider } from '../cache/CacheProvider.js';
-import { createCacheProvider } from '../cache/createCacheProvider.js';
+import type { CacheProvider } from '../../services/cache/CacheProvider.js';
+import { createCacheProvider } from '../../services/cache/createCacheProvider.js';
 
 export class NewsIngestionPipeline {
 	private readonly repository: NewsRepository;

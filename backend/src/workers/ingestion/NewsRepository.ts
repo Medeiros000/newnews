@@ -1,4 +1,4 @@
-import { PrismaService } from '../PrismaService.js';
+import { PrismaService } from '../../services/PrismaService.js';
 import { Category } from '../../models/entities/Category.js';
 import { NormalizedNews } from './NewsNormalizer.js';
 import { CategoryMapper } from '../../mappers/CategoryMapper.js';

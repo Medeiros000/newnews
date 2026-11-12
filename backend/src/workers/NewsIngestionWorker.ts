@@ -1,4 +1,4 @@
-import { NewsIngestionPipeline } from '../services/newsIngestion/NewsIngestionPipeline.js';
+import { NewsIngestionPipeline } from './ingestion/NewsIngestionPipeline.js';
 import type { CacheProvider } from '../services/cache/CacheProvider.js';
 import { createCacheProvider } from '../services/cache/createCacheProvider.js';
 
@@ -39,6 +39,10 @@ export class NewsIngestionWorker {
 
 		clearInterval(this.ingestionTimer);
 		this.ingestionTimer = undefined;
+	}
+
+	public async runOnce(): Promise<void> {
+		await this.run();
 	}
 
 	private async run(): Promise<void> {
