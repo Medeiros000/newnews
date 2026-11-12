@@ -84,3 +84,6 @@ export class App {
 		return this.instance.listen(port, callback);
 	}
 }
+
+export default App;
+
