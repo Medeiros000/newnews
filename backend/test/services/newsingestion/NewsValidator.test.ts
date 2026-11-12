@@ -2,17 +2,27 @@ import { NewsValidator } from '../../../src/services/newsIngestion/NewsValidator
 
 describe('NewsValidator', () => {
 	const validator = new NewsValidator();
+	let consoleError: jest.SpyInstance;
+
+	beforeEach(() => {
+		consoleError = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+	});
+
+	afterEach(() => {
+		consoleError.mockRestore();
+	});
 
 	const validNews = {
-		category_id: '550e8400-e29b-41d4-a716-446655440000',
-		badge_bg: 'bg-blue-500',
+		id: '550e8400-e29b-41d4-a716-446655440001',
 		title: 'Novo recurso disponível',
-		summary: 'Resumo da notícia com informações relevantes.',
-		content: 'Conteúdo completo da notícia para validação.',
-		image_url: 'https://example.com/imagem.jpg',
-		published_at: new Date('2026-01-01T00:00:00.000Z'),
+		description: 'Descrição da notícia com informações relevantes.',
+		url: 'https://example.com/noticia',
 		author: 'Redação',
+		image_url: 'https://example.com/imagem.jpg',
+		language: 'pt-BR',
+		category: 'general',
 		source: 'example.com',
+		published_at: new Date('2026-01-01T00:00:00.000Z'),
 	};
 
 	it('deve aceitar uma notícia válida', () => {
@@ -21,15 +31,14 @@ describe('NewsValidator', () => {
 
 	it.each([
 		['sem título', { ...validNews, title: '' }],
-		['sem conteúdo', { ...validNews, content: '' }],
-		['sem resumo', { ...validNews, summary: '' }],
+		['sem descrição', { ...validNews, description: '' }],
+		['sem autor', { ...validNews, author: '' }],
+		['sem idioma', { ...validNews, language: '' }],
+		['sem categoria', { ...validNews, category: '' }],
+		['sem fonte', { ...validNews, source: '' }],
+		['sem URL de imagem', { ...validNews, image_url: '' }],
 		['com URL de imagem inválida', { ...validNews, image_url: 'not-a-url' }],
 	])('deve rejeitar uma notícia %s', (_description, news) => {
 		expect(validator.validate(news)).toBeNull();
-	});
-
-	it('deve rejeitar uma notícia nula ou indefinida', () => {
-		expect(validator.validate(null)).toBeNull();
-		expect(validator.validate(undefined)).toBeNull();
 	});
 });

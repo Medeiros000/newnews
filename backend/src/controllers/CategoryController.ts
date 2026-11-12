@@ -1,33 +1,19 @@
-import { Request, Response } from 'express';
-import { PrismaService } from '../lib/prisma.js';
-import { RedisService } from '../lib/redis.js';
-import { CategoryMapper } from '../mappers/CategoryMapper.js';
-import type { Category } from '../models/entities/Category.js';
+import type { Request, Response } from 'express';
+import { CategoryService } from '../services/CategoryService.js';
+import { QueryOptions } from '../queries/QueryOptions.js';
+import { ICategoryService } from '../services/interfaces/ICategoryService.js';
+import { ICategoryController } from './interfaces/ICategoryController.js';
 
-export default class CategoryController {
-	constructor(
-		private readonly prisma: PrismaService,
-		private readonly cache?: RedisService,
-	) {}
-	public async get(_request: Request, response: Response): Promise<Response> {
+export class CategoryController implements ICategoryController {
+	public constructor(private readonly service: ICategoryService = new CategoryService()) { }
+
+	public async getAllCategories(_request: Request, response: Response): Promise<Response> {
+		const queryOptions = new QueryOptions(_request.query);
+
 		try {
-			const cacheKey = 'categories:list';
-			const cachedCategories = await this.cache?.get<Category[]>(cacheKey);
-
-			if (cachedCategories) {
-				return response.status(200).json({
-					success: true,
-					// source: 'cache',
-					data: cachedCategories,
-				});
-			}
-
-			const categories = (await this.prisma.category.findMany()).map(CategoryMapper.fromPrisma);
-			await this.cache?.set(cacheKey, categories, 300);
-
+			const categories = await this.service.getAllCategories(queryOptions);
 			return response.status(200).json({
 				success: true,
-				// source: 'database',
 				data: categories,
 			});
 		} catch {
@@ -35,34 +21,18 @@ export default class CategoryController {
 		}
 	}
 
-	public async getById(request: Request<{ id: string }>, response: Response): Promise<Response> {
+	public async getCategoryById(request: Request, response: Response): Promise<Response> {
+		const queryOptions = new QueryOptions({ ...request.params, ...request.query });
 		try {
-			const cacheKey = `categories:${request.params.id}`;
-			const cachedCategory = await this.cache?.get<Category>(cacheKey);
-
-			if (cachedCategory) {
-				return response.status(200).json({
-					success: true,
-					// source: 'cache',
-					data: cachedCategory,
-				});
-			}
-
-			const category = await this.prisma.category.findUnique({
-				where: { id: request.params.id },
-			});
+			const category = await this.service.getCategoryById(queryOptions);
 
 			if (!category) {
 				return response.status(400).json({ message: 'Categoria não encontrada.' });
 			}
 
-			const mappedCategory = CategoryMapper.fromPrisma(category);
-			await this.cache?.set(cacheKey, mappedCategory, 300);
-
 			return response.status(200).json({
 				success: true,
-				// source: 'database',
-				data: mappedCategory,
+				data: category,
 			});
 		} catch {
 			return response.status(400).json({ message: 'Erro ao buscar categoria.' });

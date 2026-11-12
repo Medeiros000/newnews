@@ -6,14 +6,21 @@ import { CategoryMapper } from '../../mappers/CategoryMapper.js';
 export class NewsRepository {
 	private readonly prisma: PrismaService;
 	private categories: ReadonlyArray<Category> = Object.freeze([]);
+	private categoriesInitialization?: Promise<void>;
+
 	constructor(prisma: PrismaService = PrismaService.getInstance()) {
 		this.prisma = prisma;
-		this.initialize().catch((err) => {
-			console.error('Erro ao inicializar NewsRepository:', err);
-		});
 	}
 
 	async initialize(): Promise<void> {
+		if (!this.categoriesInitialization) {
+			this.categoriesInitialization = this.loadCategories();
+		}
+
+		await this.categoriesInitialization;
+	}
+
+	private async loadCategories(): Promise<void> {
 		const categories = (await this.prisma.category.findMany()).map(CategoryMapper.fromPrisma);
 		this.categories = Object.freeze(categories);
 	}
@@ -27,6 +34,8 @@ export class NewsRepository {
 	}
 
 	async saveMany(newsItems: NormalizedNews[]) {
+		await this.initialize();
+
 		const itemsWithUrls = newsItems.map((item) => {
 			if (!item.url) {
 				throw new Error(`Notícia sem URL não pode ser persistida: ${item.title ?? 'sem título'}`);

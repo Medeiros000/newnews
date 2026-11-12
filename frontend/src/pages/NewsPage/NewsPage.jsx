@@ -49,6 +49,7 @@ export function NewsPage() {
 
         const res = await newsService.getNewsById(articleId);
         const articleData = res.data;
+        console.log('Fetched article data:', articleData);
         setArticle(articleData);
         markArticleAsRead(articleId);
 
@@ -153,7 +154,7 @@ export function NewsPage() {
                 <span
                   className={`badge bg-${article.badgeBg || 'primary'} position-absolute bottom-0 start-0 m-3 px-3 py-2 rounded-pill fs-6 shadow-sm`}
                 >
-                  {categoryMap[article.categoryId] || article.category || 'Geral'}
+                  {categoryMap[article.category_id] || 'Geral'}
                 </span>
               </div>
 
@@ -254,7 +255,7 @@ export function NewsPage() {
                           <span
                             className={`badge bg-${item.badgeBg || 'primary'} bg-opacity-10 text-${item.badgeBg || 'primary'} align-self-start mb-1 rounded-pill`}
                           >
-                            {categoryMap[item.categoryId] || item.category || 'Geral'}
+                            {categoryMap[item.category_id] || 'Geral'}
                           </span>
                           <h3 className="h6 fw-semibold mb-1 text-truncate-2 text-body">
                             {item.title}
