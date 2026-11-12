@@ -4,11 +4,16 @@ import { env } from '../config/env.js';
 export class RedisService {
 	private static instance: RedisService | undefined;
 	private readonly client: Redis;
+	private redisEnabled: boolean;
 
 	private constructor(
 		private readonly url: string = env.REDIS_URL,
+		private readonly enabled: boolean = env.USE_REDIS,
 		options?: RedisOptions,
 	) {
+		this.redisEnabled = enabled;
+		this.redisEnabled ? console.log('📝 Redis está habilitado.') : console.log('❌ Redis está desabilitado.');
+		
 		this.client = new Redis(url, {
 			lazyConnect: true,
 			maxRetriesPerRequest: 1,
@@ -21,7 +26,7 @@ export class RedisService {
 		});
 	}
 
-	public static getInstance(): RedisService {
+	public static getInstance(): RedisService {		
 		if (!RedisService.instance) {
 			RedisService.instance = new RedisService();
 		}
@@ -30,6 +35,8 @@ export class RedisService {
 	}
 
 	public async get<T = unknown>(key: string): Promise<T | null> {
+		if (!this.redisEnabled) return null;
+
 		try {
 			const raw = await this.client.get(key);
 			if (!raw) return null;
@@ -40,6 +47,8 @@ export class RedisService {
 	}
 
 	public async set(key: string, value: unknown, ttlSeconds: number = 300): Promise<void> {
+		
+		if (!this.redisEnabled) return;
 		try {
 			await this.client.set(key, JSON.stringify(value), 'EX', ttlSeconds);
 		} catch (error: any) {
@@ -48,6 +57,7 @@ export class RedisService {
 	}
 
 	public async del(key: string | string[]): Promise<void> {
+		if (!this.redisEnabled) return;
 		try {
 			const keys = Array.isArray(key) ? key : [key];
 			if (keys.length > 0) {
@@ -59,6 +69,7 @@ export class RedisService {
 	}
 
 	public async delByPattern(pattern: string): Promise<void> {
+		if (!this.redisEnabled) return;
 		try {
 			const keys = await this.client.keys(pattern);
 			if (keys.length > 0) {
@@ -73,6 +84,7 @@ export class RedisService {
 	}
 
 	public async disconnect(): Promise<void> {
+		if (!this.redisEnabled) return;
 		try {
 			await this.client.quit();
 		} catch (error: any) {

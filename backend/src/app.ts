@@ -14,8 +14,7 @@ import { NewsRouter } from './routes/NewsRouter.js';
 import { PrismaService } from './lib/prisma.js';
 import { RedisService } from './lib/redis.js';
 import { NewsIngestionPipeline } from './services/newsIngestion/NewsIngestionPipeline.js';
-import CategoryRouter from './routes/CategoryRouter.js';
-import CategoryController from './controllers/CategoryController.js';
+import { CategoryRouter } from './routes/CategoryRouter.js';
 import cors from 'cors';
 
 const INGESTION_INTERVAL_MS = 60 * 60 * 1000; // 1 hora
@@ -32,7 +31,7 @@ export class App {
 	) {
 		this.instance = express();
 		this.cors = cors();
-		this.pipeline = new NewsIngestionPipeline(prisma, cache);
+		this.pipeline = new NewsIngestionPipeline();
 		this.setupMiddlewares();
 		this.setupRoutes();
 		this.setupErrorHandling();
@@ -47,8 +46,8 @@ export class App {
 	private setupRoutes(): void {
 		const healthRouter = new HealthRouter();
 		const indexRouter = new IndexRouter();
-		const categoryRouter = new CategoryRouter(new CategoryController(this.prisma, this.cache));
-		const newsController = new NewsController(this.prisma, this.cache!);
+		const categoryRouter = new CategoryRouter();
+		const newsController = new NewsController();
 		const newsRouter = new NewsRouter(newsController);
 
 		this.instance.use('/api/news', newsRouter.router);

@@ -1,9 +1,12 @@
 import { Redis, type RedisOptions } from 'ioredis';
+import { env } from '../config/env.js';
 
 export class RedisService {
 	private readonly client: Redis;
+	private readonly redisEnabled: boolean;
 
-	constructor(redisUrl: string, options?: RedisOptions) {
+	constructor(redisUrl: string, enabled: boolean = env.USE_REDIS, options?: RedisOptions) {
+		this.redisEnabled = enabled;
 		this.client = new Redis(redisUrl, {
 			lazyConnect: true,
 			maxRetriesPerRequest: 1,
@@ -17,6 +20,7 @@ export class RedisService {
 	}
 
 	public async get<T = unknown>(key: string): Promise<T | null> {
+		if (!this.redisEnabled) return null;
 		try {
 			const raw = await this.client.get(key);
 			if (!raw) return null;
@@ -27,6 +31,7 @@ export class RedisService {
 	}
 
 	public async set(key: string, value: unknown, ttlSeconds: number = 300): Promise<void> {
+		if (!this.redisEnabled) return;
 		try {
 			await this.client.set(key, JSON.stringify(value), 'EX', ttlSeconds);
 		} catch {
@@ -35,6 +40,7 @@ export class RedisService {
 	}
 
 	public async del(key: string | string[]): Promise<void> {
+		if (!this.redisEnabled) return;
 		try {
 			const keys = Array.isArray(key) ? key : [key];
 			if (keys.length > 0) {
@@ -46,6 +52,7 @@ export class RedisService {
 	}
 
 	public async delByPattern(pattern: string): Promise<void> {
+		if (!this.redisEnabled) return;
 		try {
 			const keys = await this.client.keys(pattern);
 			if (keys.length > 0) {
@@ -57,6 +64,7 @@ export class RedisService {
 	}
 
 	public async disconnect(): Promise<void> {
+		if (!this.redisEnabled) return;
 		try {
 			await this.client.quit();
 		} catch {

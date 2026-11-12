@@ -24,9 +24,6 @@ export class NewsNormalizer {
 	}
 
 	normalize(raw: CurrentsArticle): NormalizedNews {
-		const image_url =
-			raw.image && raw.image !== 'None' ? raw.image : 'https://via.placeholder.com/800x400';
-
 		// Parse seguro de data com fallback
 		let published_at = new Date();
 		if (raw.published) {
