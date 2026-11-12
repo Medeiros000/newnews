@@ -99,6 +99,35 @@ export class RedisCacheProvider implements CacheProvider {
 		}
 	}
 
+	public async tryAcquireLock(key: string, token: string, ttlSeconds: number): Promise<boolean> {
+		try {
+			const result = await this.client.set(key, token, 'EX', ttlSeconds, 'NX');
+			return result === 'OK';
+		} catch (error) {
+			console.warn(
+				`Falha não bloqueante ao adquirir lock (${key}); seguindo sem lock:`,
+				this.errorMessage(error),
+			);
+			return true;
+		}
+	}
+
+	public async releaseLock(key: string, token: string): Promise<void> {
+		try {
+			await this.client.eval(
+				`if redis.call("get", KEYS[1]) == ARGV[1] then
+					return redis.call("del", KEYS[1])
+				end
+				return 0`,
+				1,
+				key,
+				token,
+			);
+		} catch (error) {
+			console.warn(`Falha não bloqueante ao liberar lock (${key}):`, this.errorMessage(error));
+		}
+	}
+
 	public async disconnect(): Promise<void> {
 		try {
 			await this.client.quit();

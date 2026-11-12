@@ -3,4 +3,6 @@ export interface CacheProvider {
 	set(key: string, value: unknown, ttlSeconds?: number): Promise<void>;
 	del(key: string | string[]): Promise<void>;
 	delByPattern(pattern: string): Promise<void>;
+	tryAcquireLock?(key: string, token: string, ttlSeconds: number): Promise<boolean>;
+	releaseLock?(key: string, token: string): Promise<void>;
 }

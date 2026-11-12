@@ -17,6 +17,7 @@ import type { CacheProvider } from './services/cache/CacheProvider.js';
 import { CategoryService } from './services/CategoryService.js';
 import { NewsService } from './services/NewsService.js';
 import { CategoryRouter } from './routes/CategoryRouter.js';
+import { NewsIngestionRouter } from './routes/NewsIngestionRouter.js';
 import cors from 'cors';
 
 export class App {
@@ -47,8 +48,10 @@ export class App {
 		);
 		const newsController = new NewsController(new NewsService(this.prisma, this.cache));
 		const newsRouter = new NewsRouter(newsController);
+		const newsIngestionRouter = new NewsIngestionRouter();
 
 		this.instance.use('/api/news', newsRouter.router);
+		this.instance.use('/api/jobs/news-ingestion', newsIngestionRouter.router);
 		this.instance.use('/', indexRouter.router);
 		this.instance.use('/api/health', healthRouter.router);
 		this.instance.use('/api/categories', categoryRouter.router);

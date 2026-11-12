@@ -14,4 +14,14 @@ export class NullCacheProvider implements CacheProvider {
 	public async del(_key: string | string[]): Promise<void> {}
 
 	public async delByPattern(_pattern: string): Promise<void> {}
+
+	public async tryAcquireLock(
+		_key: string,
+		_token: string,
+		_ttlSeconds: number,
+	): Promise<boolean> {
+		return true;
+	}
+
+	public async releaseLock(_key: string, _token: string): Promise<void> {}
 }
