@@ -11,11 +11,5 @@
       "src": "/(.*)",
       "dest": "/src/api/index.ts"
     }
-  ],
-  "crons": [
-    {
-      "path": "/api/jobs/news-ingestion",
-      "schedule": "0 * * * *"
-    }
-  ]
+  ]  
 }
