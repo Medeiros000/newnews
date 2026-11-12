@@ -92,7 +92,7 @@ describe('CategoryController', () => {
 
       const request = {
         params: {
-          id: '1',
+          id: '550e8400-e29b-41d4-a716-446655440000',
         },
       } as Request<{ id: string }>;
 
@@ -101,7 +101,7 @@ describe('CategoryController', () => {
 
       // Assert
       expect(service.getCategoryById).toHaveBeenCalledWith(
-        expect.objectContaining({ id: '1' }),
+        expect.objectContaining({ id: '550e8400-e29b-41d4-a716-446655440000' }),
       );
 
       expect(response.status).toHaveBeenCalledWith(200);
@@ -118,7 +118,7 @@ describe('CategoryController', () => {
 
       const request = {
         params: {
-          id: '999',
+          id: '550e8400-e29b-41d4-a716-446655440001',
         },
       } as Request<{ id: string }>;
 
@@ -127,7 +127,7 @@ describe('CategoryController', () => {
 
       // Assert
       expect(service.getCategoryById).toHaveBeenCalledWith(
-        expect.objectContaining({ id: '999' }),
+        expect.objectContaining({ id: '550e8400-e29b-41d4-a716-446655440001' }),
       );
 
       expect(response.status).toHaveBeenCalledWith(400);

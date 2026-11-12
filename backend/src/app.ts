@@ -16,17 +16,12 @@ import { PrismaService } from './lib/prisma.js';
 import type { CacheProvider } from './services/cache/CacheProvider.js';
 import { CategoryService } from './services/CategoryService.js';
 import { NewsService } from './services/NewsService.js';
-import { NewsIngestionPipeline } from './services/newsIngestion/NewsIngestionPipeline.js';
 import { CategoryRouter } from './routes/CategoryRouter.js';
 import cors from 'cors';
 
-const INGESTION_INTERVAL_MS = 60 * 60 * 1000; // 1 hora
-
 export class App {
 	public readonly instance: Application;
-	private readonly pipeline: NewsIngestionPipeline;
 	private readonly cors: any;
-	private ingestionTimer?: ReturnType<typeof setInterval>;
 
 	constructor(
 		private readonly prisma: PrismaService,
@@ -34,11 +29,9 @@ export class App {
 	) {
 		this.instance = express();
 		this.cors = cors();
-		this.pipeline = new NewsIngestionPipeline(this.cache);
 		this.setupMiddlewares();
 		this.setupRoutes();
 		this.setupErrorHandling();
-		this.startIngestionScheduler();
 	}
 
 	private setupMiddlewares(): void {
@@ -85,29 +78,6 @@ export class App {
 		};
 
 		this.instance.use(errorHandler);
-	}
-
-	private startIngestionScheduler(): void {
-		const run = async () => {
-			try {
-				await this.pipeline.execute();
-			} catch (error) {
-				console.error('❌ Erro no agendamento da ingestão:', error);
-			}
-		};
-
-		// Executa imediatamente ao iniciar e depois a cada hora
-		run();
-		this.ingestionTimer = setInterval(run, INGESTION_INTERVAL_MS);
-		console.log(
-			`⏱️  Ingestão de notícias agendada para rodar a cada ${INGESTION_INTERVAL_MS / 60_000} minutos.`,
-		);
-	}
-
-	public stopIngestionScheduler(): void {
-		if (this.ingestionTimer) {
-			clearInterval(this.ingestionTimer);
-		}
 	}
 
 	public listen(port: number | string, callback?: () => void): Server {

@@ -11,7 +11,6 @@ const server: Server = app.listen(env.PORT, () => {
 
 const shutdown = (signal: 'SIGINT' | 'SIGTERM'): void => {
 	console.log(`Received ${signal}, shutting down...`);
-	app.stopIngestionScheduler();
 	server.close(async (error?: Error) => {
 		if (error) {
 			console.error('Error while closing HTTP server:', error);

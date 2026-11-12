@@ -3,6 +3,11 @@ import type { Category as PrismaCategory } from '../../generated/prisma/client.j
 
 export class CategoryMapper {
 	static fromPrisma(category: PrismaCategory): Category {
-		return new Category(category.id, category.name, category.label, category.icon);
+		return new Category(
+			category.id,
+			category.name,
+			category.label,
+			category.icon
+		);
 	}
 }

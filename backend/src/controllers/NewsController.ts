@@ -85,7 +85,6 @@ export class NewsController implements INewsController {
 				: typeof request.query.q === 'string'
 					? request.query.q
 					: undefined;
-		const slug = typeof request.params.slug === 'string' ? request.params.slug : undefined;
 		const category =
 			typeof request.query.category === 'string' ? request.query.category : undefined;
 		const page = this.parseNumber(request.query.page, 1);
@@ -96,7 +95,6 @@ export class NewsController implements INewsController {
 			page,
 			limit,
 			query,
-			slug,
 			category,
 		});
 	}
