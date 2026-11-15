@@ -1,6 +1,8 @@
 import { z } from 'zod';
 
-// Validação de Login
+/**
+ * Zod validation schema for user login.
+ */
 export const schemaLogin = z.object({
   email: z
     .string()
@@ -9,7 +11,9 @@ export const schemaLogin = z.object({
   password: z.string().min(1, 'A senha é obrigatória'),
 });
 
-// Validação de Registro
+/**
+ * Zod validation schema for user registration.
+ */
 export const schemaRegistro = z.object({
   name: z
     .string()

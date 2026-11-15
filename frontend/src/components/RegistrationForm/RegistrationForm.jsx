@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { schemaRegistro } from '../Validation/'; // Schema do Zod
+import { schemaRegistro } from '@/schemas'; // Schema do Zod
 import {
   IconUser,
   IconMail,
