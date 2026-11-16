@@ -20,7 +20,7 @@ export class NewsService implements INewsService {
 
     const where = query
       ? {
-          OR: [{ title: { contains: query } }, { content: { contains: query } }],
+          OR: [{ title: { contains: query } }, { description: { contains: query } }],
         }
       : undefined;
 
