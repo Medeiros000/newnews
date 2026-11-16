@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { schemaLogin } from '../Validation/';
+import { schemaLogin } from '@/schemas';
 import './LoginForm.css';
 import {
   IconMail,
