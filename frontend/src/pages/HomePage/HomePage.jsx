@@ -9,7 +9,6 @@ import {
   useUserStore,
   useNavigationStore,
   useBookmarksStore,
-  useToastStore,
   selectNavCategory,
 } from '@/stores';
 import { getTimeBasedGreeting, formatCurrentDateTime } from '@/utils';
@@ -29,6 +28,7 @@ export function HomePage() {
     (state) => state.debouncedSearchQuery,
   );
   const clearSearch = useNavigationStore((state) => state.clearSearch);
+  const setActiveNavId = useNavigationStore((state) => state.setActiveNavId);
   const readArticleIds = useBookmarksStore((state) => state.readArticleIds);
   const bookmarkedArticleIds = useBookmarksStore(
     (state) => state.bookmarkedArticleIds,
@@ -145,7 +145,10 @@ export function HomePage() {
                   isSavedTabActive={isSavedTabActive}
                   category={categoryLabel}
                   onClearSearch={clearSearch}
-                  onResetCategory={() => setActiveCategory('Todos')}
+                  onResetCategory={() => {
+                    setActiveCategory('Todos');
+                    setActiveNavId('inicio');
+                  }}
                 />
               ) : (
                 <>
