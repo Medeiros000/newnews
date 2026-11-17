@@ -19,7 +19,6 @@
     "@tabler/icons-react": "^3.48.0",
     "axios": "^1.20.0",
     "bootstrap": "^5.3.8",
-    "dotenv": "^18.0.10",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-hook-form": "^7.89.0",
