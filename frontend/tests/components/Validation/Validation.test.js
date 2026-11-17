@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { schemaLogin, schemaRegistro } from '@/components/Validation/Validation.jsx';
+import { schemaLogin, schemaRegistro } from '@/schemas';
 
 describe('Validation schemas', () => {
   describe('schemaLogin', () => {
