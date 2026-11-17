@@ -1,6 +1,6 @@
 /**
  * Application-wide configuration constants.
- * Values are read from Vite environment variables and fall back to safe defaults.
+ * Values are read from environment variables and fall back to safe defaults.
  */
 export const APP_CONFIG = {
   // Base URL for all API requests

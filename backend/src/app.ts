@@ -19,7 +19,7 @@ export class App {
 
 	constructor() {
 		this.instance = express();
-		this.cors = cors();
+		this.cors = cors({ origin: '*' });
 		this.setupMiddlewares();
 		this.setupRoutes();
 		this.setupErrorHandling();
