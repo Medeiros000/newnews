@@ -1,10 +1,10 @@
 /**
  * Application-wide configuration constants.
- * Values are read from Vite environment variables and fall back to safe defaults.
+ * Values are read from environment variables and fall back to safe defaults.
  */
 export const APP_CONFIG = {
   // Base URL for all API requests
-  API_BASE_URL: import.meta.env.VITE_API_BASE_URL || '/api',
+  API_BASE_URL: process.env.VITE_API_BASE_URL || process.env.API_BASE_URL || '/api',
 
   // Delay (ms) before the search query is considered "settled" for API calls
   DEBOUNCE_SEARCH_MS: 250,
