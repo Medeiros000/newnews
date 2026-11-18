@@ -31,6 +31,8 @@ jobs:
       - name: Run Backend Tests
         run: npx jest
         working-directory: ./backend
+        env:
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/test_db?schema=public"
 
       # --- FRONTEND ---
       - name: Install Frontend Dependencies
@@ -40,8 +42,6 @@ jobs:
       - name: Run Frontend Tests
         run: npm test
         working-directory: ./frontend
-        env:
-          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/test_db?schema=public"
 
       # --- DEPLOY NO RENDER ---
       - name: Trigger Render Deploy
