@@ -32,7 +32,7 @@ jobs:
         run: npx jest
         working-directory: ./backend
         env:
-          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/test_db?schema=public"
+          DATABASE_URL: "file:./dev.db"
 
       # --- FRONTEND ---
       - name: Install Frontend Dependencies
