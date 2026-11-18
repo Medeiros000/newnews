@@ -27,7 +27,7 @@ jobs:
         working-directory: ./backend
 
       - name: Run Backend Tests
-        run: npm test
+        run: npx jest
         working-directory: ./backend
 
       # --- FRONTEND ---
