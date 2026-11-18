@@ -44,6 +44,10 @@ jobs:
         working-directory: ./frontend
 
       # --- DEPLOY NO RENDER ---
-      - name: Trigger Render Deploy
+      - name: Trigger Render Deploy Frontend
         run: |
           curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+
+      - name: Trigger Render Deploy Backend
+        run: |
+          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL_B }}"
