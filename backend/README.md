@@ -1,8 +1,8 @@
 # Backend — New News
 
-API backend do New News, construída com **Node.js + Express + TypeScript + Prisma + SQLite + Redis + Zod**.
+API backend do New News, construída com **Node.js + Express 5 + TypeScript + Prisma + SQLite + Redis + Zod**, seguindo os princípios de **Programação Orientada a Objetos (POO)**.
 
-As notícias exibidas no app são obtidas automaticamente da **[Currents API](https://currentsapi.services/)** e armazenadas localmente no banco de dados.
+As notícias exibidas no app são coletadas automaticamente da **[Currents API](https://currentsapi.services/)**, armazenadas localmente no banco de dados e cacheadas no Redis.
 
 ---
 
@@ -19,252 +19,100 @@ Crie o arquivo `.env` com base no `.env.example`:
 ```env
 DATABASE_URL="file:./dev.db"
 PORT=3000
+USE_REDIS=true
 REDIS_URL="redis://localhost:6379"
 CURRENTS_API_KEY="sua_chave_aqui"
 ```
 
-> Obtenha uma chave gratuita em [currentsapi.services](https://currentsapi.services/).
+> **Chave da API:** Obtenha uma chave gratuita em [currentsapi.services](https://currentsapi.services/).  
+> **Sem Redis local?** Você pode definir `USE_REDIS=false` para utilizar o provedor de cache nulo em memória durante testes simples.
 
-Gere o Prisma Client e aplique as migrations:
+Gere o Prisma Client, aplique as migrações e popule o banco com as categorias iniciais:
 
 ```bash
 npm run db:generate
 npm run db:migrate
+npm run db:seed
 ```
 
-Inicie a API:
+Inicie o servidor da API:
 
 ```bash
 npm run dev
 ```
 
-A API estará disponível em:
+A API estará disponível em `http://localhost:3000`.
 
-```text
-http://localhost:3000
-```
-
-Em outro processo, inicie o worker de ingestão:
+Em outro terminal, inicie o worker autônomo de ingestão:
 
 ```bash
 npm run dev:worker
 ```
 
-O worker executa uma ingestão imediatamente ao iniciar e depois a cada hora. Se uma
-execução ainda estiver em andamento quando o intervalo vencer, o próximo ciclo é
-ignorado para evitar concorrência.
-
-> **Banco de dados:** o SQLite será criado em `dev.db`.
+O worker executa uma busca de notícias imediatamente ao iniciar e repete a cada hora. Ele possui trava de concorrência para garantir que apenas um ciclo execute por vez.
 
 ---
 
-## 🧰 Scripts
+## 🧰 Scripts Disponíveis
 
-| Script                | O que faz                                   |
-| --------------------- | ------------------------------------------- |
-| `npm run dev`         | Inicia o servidor de desenvolvimento        |
-| `npm run dev:worker` | Inicia o worker de ingestão em desenvolvimento |
-| `npm run build`       | Compila o projeto para produção             |
-| `npm start`           | Executa o projeto compilado                 |
-| `npm run start:worker` | Executa o worker compilado                |
-| `npm run db:generate` | Gera o Prisma Client                        |
-| `npm run db:migrate`  | Cria e aplica migrations                    |
-| `npm run db:studio`   | Abre o Prisma Studio                        |
-
----
-
-## 🛠️ Stack
-
-| Responsabilidade    | Tecnologia      |
-| ------------------- | --------------- |
-| Runtime             | Node.js 20+     |
-| Framework HTTP      | Express 5       |
-| Linguagem           | TypeScript      |
-| ORM                 | Prisma          |
-| Banco de dados      | SQLite          |
-| Cache               | Redis (ioredis) |
-| Validação           | Zod             |
-| Fonte de notícias   | Currents API    |
-| Containerização     | Docker          |
+| Script | O que faz |
+| :--- | :--- |
+| `npm run dev` | Inicia a API em modo de desenvolvimento com hot-reload (`tsx watch`). |
+| `npm run dev:worker` | Inicia o worker de ingestão com hot-reload. |
+| `npm run build` | Compila o TypeScript para JavaScript em `dist/`. |
+| `npm start` | Executa o servidor HTTP compilado em produção. |
+| `npm run start:worker` | Executa o worker compilado em produção. |
+| `npm test` | Executa os testes unitários via Jest. |
+| `npm run lint` | Analisa problemas no código com Oxlint. |
+| `npm run format` | Formata o código com Prettier. |
+| `npm run db:generate` | Gera o cliente tipado do Prisma. |
+| `npm run db:migrate` | Cria e aplica migrações no banco SQLite (`dev.db`). |
+| `npm run db:seed` | Executa o script de seed de categorias (`prisma/seed.ts`). |
+| `npm run db:studio` | Abre a interface visual do Prisma Studio no navegador. |
 
 ---
 
-## 📰 Ingestão de Notícias (Currents API)
+## 🛠️ Stack Tecnológica
 
-O worker de ingestão busca notícias automaticamente da **[Currents API](https://currentsapi.services/)** através de um pipeline que roda ao iniciar o worker e depois **a cada hora**.
-
-### Pipeline
-
-```
-CurrentsApiClient → Category lookup → NewsNormalizer → NewsValidator → NewsDeduplicator → NewsRepository
-```
-
-| Etapa                 | Responsabilidade                                              |
-| --------------------- | ------------------------------------------------------------- |
-| `CurrentsApiClient`   | Faz a requisição à API e retorna os artigos brutos            |
-| `Category lookup`     | Compara o primeiro item de `category` com `Category.name` ou com seus termos separados por `_`; sem categoria, usa `general` |
-| `NewsNormalizer`      | Transforma o formato da API no schema interno da aplicação    |
-| `NewsValidator`       | Descarta artigos inválidos ou incompletos                     |
-| `NewsDeduplicator`    | Filtra artigos já existentes no banco (1 única query em lote) |
-| `NewsRepository`      | Persiste os artigos novos e invalida o cache de listagem      |
-
-Após cada ingestão bem-sucedida, o cache Redis das listagens (`news:list:*`) é invalidado automaticamente.
-
-### Variável de ambiente obrigatória
-
-| Variável           | Descrição                        |
-| ------------------ | -------------------------------- |
-| `CURRENTS_API_KEY` | Chave de acesso à Currents API   |
+| Camada | Tecnologia |
+| :--- | :--- |
+| **Runtime** | Node.js 20+ |
+| **Framework HTTP** | Express 5 |
+| **Linguagem** | TypeScript |
+| **ORM** | Prisma 7 (com driver `@prisma/adapter-better-sqlite3`) |
+| **Banco de Dados** | SQLite (`dev.db`) |
+| **Cache** | Redis (`ioredis`) |
+| **Validação** | Zod |
+| **Fonte de Notícias** | Currents API |
 
 ---
 
 ## ⚙️ Variáveis de Ambiente
 
-| Variável               | Exemplo                      | Descrição                                  |
-| ---------------------- | ---------------------------- | ------------------------------------------ |
-| `DATABASE_URL`         | `file:./dev.db`              | URL de conexão com o banco SQLite          |
-| `PORT`                 | `3000`                       | Porta utilizada pela API                   |
-| `REDIS_URL`            | `redis://localhost:6379`     | URL de conexão com o Redis (cache)         |
-| `CURRENTS_API_KEY`     | `abc123...`                  | Chave de acesso à Currents API             |
-
-> O arquivo `.env` é necessário para executar comandos locais que dependem dessas variáveis.
-
----
-
-## 🔌 API
-
-Todas as rotas utilizam o prefixo `/api`.
-
-### Health Check
-
-```http
-GET /api/health
-```
-
-Verifica se a API está ativa.
-
-**Resposta `200 OK`:**
-
-```json
-{
-  "status": "ok",
-  "service": "newnews-api",
-  "timestamp": "2026-10-06T13:00:00.000Z"
-}
-```
-
-### Notícias
-
-| Método | Rota                     | Descrição                                        |
-| ------ | ------------------------ | ------------------------------------------------ |
-| `GET`  | `/api/news`              | Lista notícias com paginação e busca por texto   |
-| `GET`  | `/api/news/:id`          | Retorna uma notícia pelo ID                      |
-| `GET`  | `/api/news/:id/related`  | Retorna notícias relacionadas (mesma categoria)  |
-
-#### `GET /api/news`
-
-**Query params:**
-
-| Parâmetro | Tipo     | Padrão | Descrição                                          |
-| --------- | -------- | ------ | -------------------------------------------------- |
-| `query`   | `string` | —      | Texto para busca em título, resumo e conteúdo      |
-| `q`       | `string` | —      | Alias de `query`                                   |
-| `page`    | `number` | `1`    | Página (mínimo 1)                                  |
-| `limit`   | `number` | `10`   | Itens por página (máximo 100)                      |
-
-**Resposta `200 OK`:**
-
-```json
-{
-  "source": "database",
-  "type": "all",
-  "query": null,
-  "pagination": {
-    "page": 1,
-    "limit": 10,
-    "totalItems": 120,
-    "totalPages": 12
-  },
-  "data": []
-}
-```
-
-> O campo `source` indica se a resposta veio do `cache` (Redis) ou do `database`.
-
-#### `GET /api/news/:id/related`
-
-**Query params:**
-
-| Parâmetro | Tipo     | Padrão | Descrição                          |
-| --------- | -------- | ------ | ---------------------------------- |
-| `limit`   | `number` | `4`    | Quantidade de notícias (máximo 50) |
-
-### Usuários
-
-| Método | Rota         | Descrição         |
-| ------ | ------------ | ----------------- |
-| `GET`  | `/api/users` | Lista os usuários |
-| `POST` | `/api/users` | Cria um usuário   |
-
-#### `POST /api/users`
-
-**Body:**
-
-| Campo   | Tipo     | Regras                |
-| ------- | -------- | --------------------- |
-| `email` | `string` | E-mail válido e único |
-| `name`  | `string` | 1–120 caracteres      |
+| Variável | Padrão | Descrição |
+| :--- | :--- | :--- |
+| `DATABASE_URL` | `file:./dev.db` | URL de conexão com o banco SQLite. |
+| `PORT` | `3000` | Porta onde o servidor HTTP escuta requisições. |
+| `USE_REDIS` | `true` | Define se o cache Redis deve ser utilizado (`true`) ou ignorado (`false`). |
+| `REDIS_URL` | `redis://localhost:6379` | URL de conexão com a instância do Redis. |
+| `CURRENTS_API_KEY` | — | Chave de autenticação da Currents API para o worker. |
 
 ---
 
-## ⚠️ Respostas de Erro
+## 🔌 Rotas Ativas da API
 
-### `400 Bad Request`
+Todas as rotas utilizam o prefixo `/api` (com exceção da raiz `/` que exibe uma página informativa).
 
-```json
-{
-  "error": "Invalid request body",
-  "issues": []
-}
-```
-
-### `404 Not Found`
-
-```json
-{
-  "error": "Not found"
-}
-```
-
-### `500 Internal Server Error`
-
-```json
-{
-  "error": "Internal server error"
-}
-```
-
----
-
-## 🗄️ Banco de Dados
-
-O schema do Prisma está em:
-
-```text
-prisma/schema.prisma
-```
-
-Criar uma nova migration:
-
-```bash
-npm run db:migrate -- --name nome_da_migration
-```
-
-Abrir o Prisma Studio:
-
-```bash
-npm run db:studio
-```
+| Método | Rota | Descrição |
+| :--- | :--- | :--- |
+| `GET` | `/` | Página HTML informativa de boas-vindas da API. |
+| `GET` | `/api/health` | Verificação de status e disponibilidade do serviço. |
+| `GET` | `/api/categories` | Lista todas as categorias cadastradas. |
+| `GET` | `/api/categories/:id` | Retorna uma categoria específica pelo seu UUID. |
+| `GET` | `/api/news` | Lista notícias com suporte a filtros (`query`, `category`) e paginação (`page`, `limit`). |
+| `GET` | `/api/news/search` | Alias alternativo de busca textual para `/api/news`. |
+| `GET` | `/api/news/:id` | Retorna uma notícia específica pelo seu UUID. |
+| `GET` | `/api/news/:id/related` | Retorna notícias relacionadas da mesma categoria (parâmetro `limit`). |
 
 ---
 
@@ -273,28 +121,24 @@ npm run db:studio
 ```text
 backend/
 ├── prisma/
-│   ├── migrations/        # Migrations do banco
-│   └── schema.prisma      # Schema do Prisma
+│   ├── migrations/            # Histórico de migrações do banco
+│   ├── schema.prisma          # Definição dos models (Category, News)
+│   └── seed.ts                # Script de inserção inicial de categorias
 │
 ├── src/
-│   ├── config/            # Configurações e variáveis de ambiente
-│   ├── controllers/       # Lógica dos endpoints (newsController, userController)
-│   ├── lib/               # Instâncias compartilhadas (Prisma, Redis)
-│   ├── routes/            # Definição das rotas da API
-│   ├── services/
-│   │   └── newsIngestion/ # Pipeline de ingestão da Currents API
-│   │       ├── CurrentsApiClient.ts
-│   │       ├── NewsNormalizer.ts
-│   │       ├── NewsValidator.ts
-│   │       ├── NewsDeduplicator.ts
-│   │       ├── NewsRepository.ts
-│   │       └── NewsIngestionPipeline.ts
-│   ├── container.ts       # Injeção de dependências (prisma, cache)
-│   ├── app.ts             # Configuração do Express
-│   ├── server.ts          # Inicialização do servidor HTTP
-│   ├── worker.ts          # Inicialização do worker de ingestão
-│   └── workers/
-│       └── NewsIngestionWorker.ts # Agendamento da ingestão
+│   ├── config/                # Validação de variáveis de ambiente com Zod (env.ts)
+│   ├── controllers/           # Orquestração HTTP (NewsController, CategoryController)
+│   ├── mappers/               # Conversores Prisma -> Entidades de Domínio
+│   ├── models/entities/       # Classes das entidades de domínio (News, Category)
+│   ├── queries/               # Normalização e validação de query params
+│   ├── routes/                # Classes de rotas do Express (NewsRouter, CategoryRouter, HealthRouter, IndexRouter)
+│   ├── services/              # Camada de negócio e acesso a dados (NewsService, CategoryService, PrismaService)
+│   │   ├── cache/             # Provedores de cache (RedisCacheProvider, NullCacheProvider)
+│   │   └── newsIngestion/     # Pipeline de coleta (CurrentsApiClient, Normalizer, Validator, Repository)
+│   ├── workers/               # Agendamento e controle de execução do worker (NewsIngestionWorker)
+│   ├── app.ts                 # Configuração do Express, middlewares e tratamento global de erros
+│   ├── server.ts              # Ponto de entrada do servidor HTTP
+│   └── worker.ts              # Ponto de entrada do worker autônomo
 │
 ├── .env.example
 ├── package.json
@@ -304,31 +148,11 @@ backend/
 
 ---
 
-## 📐 Convenções
+## 📖 Especificações Detalhadas e Diagramas
 
-### Organização
+Para consultar os contratos detalhados de requisição/resposta, modelo relacional completo e diagramas de fluxo, consulte a documentação oficial:
 
-* **`routes/`** → define os endpoints e recebe as requisições HTTP.
-* **`controllers/`** → contém a lógica de negócio de cada rota.
-* **`config/`** → concentra configurações e variáveis de ambiente.
-* **`lib/`** → concentra instâncias e dependências compartilhadas.
-* **`services/newsIngestion/`** → pipeline de busca e persistência de notícias.
-* **`app.ts`** → configura o Express e as rotas HTTP.
-* **`server.ts`** → inicializa o servidor HTTP.
-* **`worker.ts`** → inicializa o worker de ingestão.
-
-### Nomenclatura
-
-* Arquivos → `camelCase` quando representarem módulos simples; `PascalCase` para classes.
-* Rotas → nomes no plural para recursos (`users`, `news`).
-* Variáveis e funções → `camelCase`.
-* Tipos e interfaces → `PascalCase`.
-* Constantes → `UPPER_SNAKE_CASE` quando forem constantes globais.
-
-### Validação
-
-A validação de entradas deve ser feita com **Zod** antes que os dados sejam processados pela aplicação ou enviados ao banco.
-
-### Banco de dados
-
-Alterações no schema devem ser realizadas através de **migrations do Prisma**, evitando alterações manuais no banco de desenvolvimento.
+- 📑 **[Contratos de API (`docs/backend/api/`)](../docs/backend/api/news-route.md)**
+- 🗄️ **[Modelo de Dados Relacional](../docs/backend/er_docs/er_doc.md)**
+- 📰 **[Pipeline de Ingestão de Notícias](../docs/backend/news-collection/news-collection.md)**
+- 🛠️ **[Guia para Adicionar Novas Rotas e Seeds](../docs/backend/Criacao_de_rotas_e_seeds.md)**

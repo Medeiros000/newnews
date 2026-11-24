@@ -1,101 +1,78 @@
-### **Parâmetros da rota POST /api/auth/register**
+> ⚠️ **STATUS: ESPECIFICAÇÃO DE BACKLOG FUTURO — AINDA NÃO IMPLEMENTADO NO BACKEND**  
+> Este endpoint faz parte do planejamento da camada de autenticação e contas de usuário, conforme previsto nos requisitos do projeto, mas não está ativo na API atual.
 
 ---
 
-**Resumo:** cria uma nova conta de usuário.
+# Rota de Cadastro de Usuário: `POST /api/auth/register`
 
+Cria uma nova conta de usuário no sistema com criptografia de senha e retorna a sessão inicial autenticada com token JWT.
 
+- **Método:** `POST`
+- **Rota:** `/api/auth/register`
+- **Autenticação:** Não necessária
 
-**Parâmetros do corpo da requisição:**
+---
 
-- `name` (obrigatório): string
+## 1. Parâmetros do Corpo da Requisição (Body JSON)
 
-- `email` (obrigatório): string
+| Campo | Tipo | Obrigatório | Regras |
+| :--- | :--- | :--- | :--- |
+| `name` | `string` | Sim | Nome completo (mínimo 2 caracteres). |
+| `email` | `string` | Sim | E-mail válido e único no sistema. |
+| `password` | `string` | Sim | Senha de acesso (mínimo 6 caracteres). |
 
-- `password` (obrigatório): string
-
-
-
-**Exemplo de request:**
-
+### Exemplo de Requisição
 ```http
-header
 POST /api/auth/register HTTP/1.1
+Host: localhost:3000
 Content-Type: application/json
-```
 
-```json
-json
 {
-  "name": "User test",
-  "email": "user_test@test.com",
-  "password": "Test_123456"
+  "name": "Nome do Usuário",
+  "email": "usuario@exemplo.com",
+  "password": "SenhaSegura123!"
 }
-
 ```
 
-**Exemplo de chamada com `curl`:**
-
+### Exemplo com cURL
 ```bash
 curl -X POST http://localhost:3000/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "User test",
-    "email": "user_test@test.com",
-    "password": "Test_123456"
+    "name": "Nome do Usuário",
+    "email": "usuario@exemplo.com",
+    "password": "SenhaSegura123!"
   }'
 ```
 
+---
 
-**Resposta de sucesso:**
-
-- Código: `201 Created`
-
-
+## 2. Resposta de Sucesso Planejada (`201 Created`)
 
 ```json
-
 {
-
   "success": true,
-
   "data": {
-
     "user": {
-
-      "id": 2,
-
-      "name": "User Test",
-
-      "email": "user_test@test.com",
-
+      "id": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+      "name": "Nome do Usuário",
+      "email": "usuario@exemplo.com",
       "avatar": null
-
     },
-
-    "token": "jwt-token"
-
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
   }
-
 }
-
 ```
 
-
-
-**Respostas de erro:**
-
-- `400 Bad Request`: campos inválidos ou ausentes
-
-- `409 Conflict`: e-mail já cadastrado
-
-
-
-
-
-### **Fluxograma da rota `api/auth/register`:**
 ---
-**Resumo:** diagrama de fluxo da rota register
 
-<img src="diagrams/register-diagram.svg" height="1000">
+## 3. Respostas de Erro Planejadas
 
+- **`400 Bad Request`**: Campos inválidos ou malformados.
+- **`409 Conflict`**: E-mail já cadastrado anteriormente.
+
+---
+
+## 4. Fluxograma Conceitual da Rota
+
+<img src="diagrams/register-diagram.svg" height="800">
