@@ -15,6 +15,7 @@ export class NewsRouter {
   private setupRoutes(): void {
     this.router.get('/', this.controller.getNews.bind(this.controller));
     this.router.get('/search', this.controller.searchNews.bind(this.controller));
+    this.router.get('/news-ingestion', this.controller.startNewsIngestion.bind(this.controller));
     this.router.get('/:id', this.controller.getNewsById.bind(this.controller));
     this.router.get('/:id/related', this.controller.getRelatedNews.bind(this.controller));
   }
