@@ -1,171 +1,191 @@
-### **Parâmetros da rota `GET /api/news`**
+# Rotas de Notícias: `/api/news`
+
+Documentação completa dos endpoints de consulta, detalhamento e busca de notícias. As notícias são armazenadas no SQLite e possuem suporte a cache Redis com expiração configurada.
 
 ---
 
-**Resumo:** retorna notícias com suporte a filtros por categoria e pesquisa textual. Os resultados são consultados no cache quando disponíveis e, em caso de ausência, obtidos do banco de dados. Após a verificação dos resultados, as notícias encontradas passam pelo algoritmo de personalização e reordenação (*personalization + re-ranking*).
+## 1. Listar Notícias (Feed Principal e Filtros)
 
-**Parâmetros da query string:**
+Retorna notícias ordenadas por data de publicação (`published_at desc`), com suporte a paginação e filtros opcionais por texto e categoria.
 
-- `category` (opcional): `string` — filtra as notícias por categoria.
-- `query` (opcional): `string` — pesquisa notícias por texto.
+- **Método:** `GET`
+- **Rota:** `/api/news`
+- **Autenticação:** Não necessária
 
-Os parâmetros `category` e `query` podem ser utilizados individualmente para filtrar notícias por categoria ou pesquisar conteúdos textuais. Quando nenhum deles é informado, a rota retorna o feed de notícias.
+### Parâmetros da Query String
+| Parâmetro | Tipo | Padrão | Descrição |
+| :--- | :--- | :--- | :--- |
+| `query` | `string` | — | Busca textual no título (`title`) e na descrição (`description`). |
+| `q` | `string` | — | Alias alternativo para `query`. |
+| `category` | `string` | — | Nome da categoria cadastrada (ex.: `science_technology`, `sport`, `general`). |
+| `page` | `number` | `1` | Número da página desejada (mínimo 1). |
+| `limit` | `number` | `10` | Quantidade de registros por página. |
 
-**Exemplos de request:**
-
+### Exemplos de Requisição
 ```http
 GET /api/news HTTP/1.1
+GET /api/news?category=science_technology HTTP/1.1
+GET /api/news?query=inteligencia&page=1&limit=12 HTTP/1.1
 ```
 
-```http
-GET /api/news?category=technology HTTP/1.1
-```
-
-```http
-GET /api/news?query=artificial%20intelligence HTTP/1.1
-```
-
-**Exemplos de chamada com `curl`:**
-
+### Exemplos com cURL
 ```bash
 curl "http://localhost:3000/api/news"
+curl "http://localhost:3000/api/news?category=science_technology"
+curl "http://localhost:3000/api/news?query=inteligencia&page=1&limit=12"
 ```
 
-```bash
-curl "http://localhost:3000/api/news?category=technology"
-```
-
-```bash
-curl "http://localhost:3000/api/news?query=artificial%20intelligence"
-```
-
-**Resposta de sucesso:**
-
-- Código: `200 OK`
-
+### Resposta de Sucesso (`200 OK`)
 ```json
 {
   "success": true,
-  "data": {
-    "news": [
-      {
-        "id": 1,
-        "title": "Example news title",
-        "category": "technology"
-      }
-    ]
-  }
-}
-```
-
-**Respostas de erro:**
-
-- `400 Bad Request`: parâmetros inválidos ou malformados.
-
-Uma consulta válida sem resultados retorna `200 OK` com uma lista vazia.
-
----
-
-### **Parâmetros da rota `GET /api/news/:id`**
-
----
-
-**Resumo:** retorna os detalhes de uma notícia específica, identificada pelo seu ID. A consulta utiliza o cache quando disponível e recorre ao banco de dados quando necessário. A visualização do artigo pode gerar um evento de interação para atualizar o perfil de preferências do usuário, influenciando futuras recomendações.
-
-**Parâmetros da rota:**
-
-- `id` (obrigatório): identificador da notícia.
-
-**Exemplo de request:**
-
-```http
-GET /api/news/1 HTTP/1.1
-```
-
-**Exemplo de chamada com `curl`:**
-
-```bash
-curl "http://localhost:3000/api/news/1"
-```
-
-**Resposta de sucesso:**
-
-- Código: `200 OK`
-
-```json
-{
-  "success": true,
-  "data": {
-    "article": {
-      "id": 1,
-      "title": "Example news title",
-      "category": "technology"
+  "data": [
+    {
+      "id": "e9b276b5-095a-4cb6-b25f-fcbe1e6eb901",
+      "category_id": "c1f7a0b5-78e2-45e3-982e-9d8a1c6e1002",
+      "title": "Avanços em Inteligência Artificial no mercado de desenvolvimento",
+      "description": "Novo modelo promete automatizar tarefas repetitivas com alta precisão e velocidade.",
+      "url": "https://exemplo.com/noticias/avancos-em-ia",
+      "author": "Redação Tech",
+      "image_url": "https://exemplo.com/imagens/ia.jpg",
+      "language": "pt-BR",
+      "source": "Portal Tech",
+      "published_at": "2026-11-23T18:00:00.000Z"
     }
+  ]
+}
+```
+
+---
+
+## 2. Buscar Notícias (Alias `/search`)
+
+Atua como um alias direto para a rota principal de listagem, aceitando os mesmos parâmetros.
+
+- **Método:** `GET`
+- **Rota:** `/api/news/search`
+- **Autenticação:** Não necessária
+- **Parâmetros:** Idênticos a `GET /api/news`.
+
+```bash
+curl "http://localhost:3000/api/news/search?query=tecnologia"
+```
+
+---
+
+## 3. Detalhes de uma Notícia
+
+Retorna as informações completas de um artigo individual identificado pelo seu `id`.
+
+- **Método:** `GET`
+- **Rota:** `/api/news/:id`
+- **Autenticação:** Não necessária
+
+### Parâmetros de Rota
+| Parâmetro | Tipo | Obrigatório | Descrição |
+| :--- | :--- | :--- | :--- |
+| `id` | `string` (UUID) | Sim | Identificador único da notícia. |
+
+### Exemplo de Requisição
+```http
+GET /api/news/e9b276b5-095a-4cb6-b25f-fcbe1e6eb901 HTTP/1.1
+```
+
+### Exemplo com cURL
+```bash
+curl "http://localhost:3000/api/news/e9b276b5-095a-4cb6-b25f-fcbe1e6eb901"
+```
+
+### Resposta de Sucesso (`200 OK`)
+```json
+{
+  "success": true,
+  "data": {
+    "id": "e9b276b5-095a-4cb6-b25f-fcbe1e6eb901",
+    "category_id": "c1f7a0b5-78e2-45e3-982e-9d8a1c6e1002",
+    "title": "Avanços em Inteligência Artificial no mercado de desenvolvimento",
+    "description": "Novo modelo promete automatizar tarefas repetitivas com alta precisão e velocidade.",
+    "url": "https://exemplo.com/noticias/avancos-em-ia",
+    "author": "Redação Tech",
+    "image_url": "https://exemplo.com/imagens/ia.jpg",
+    "language": "pt-BR",
+    "source": "Portal Tech",
+    "published_at": "2026-11-23T18:00:00.000Z"
   }
 }
 ```
 
-**Respostas de erro:**
-
-- `400 Bad Request`: ID inválido ou malformado.
-- `404 Not Found`: notícia inexistente.
+### Respostas de Erro
+- **`404 Not Found`**: Notícia inexistente no banco de dados.
+```json
+{
+  "success": false,
+  "error": "Notícia não encontrada"
+}
+```
 
 ---
 
-### **Parâmetros da rota `GET /api/news/:id/related`**
+## 4. Notícias Relacionadas
 
----
+Retorna artigos recentes pertencentes à mesma categoria da notícia de referência, excluindo o próprio artigo.
 
-**Resumo:** retorna notícias relacionadas a um artigo específico, identificado pelo seu ID. Os resultados são consultados no cache quando disponíveis e, caso contrário, obtidos do banco de dados.
+- **Método:** `GET`
+- **Rota:** `/api/news/:id/related`
+- **Autenticação:** Não necessária
 
-**Parâmetros da rota:**
+### Parâmetros de Rota e Query
+| Parâmetro | Onde | Tipo | Padrão | Descrição |
+| :--- | :--- | :--- | :--- | :--- |
+| `id` | Path | `string` (UUID) | — | Identificador da notícia de referência. |
+| `limit` | Query | `number` | `4` | Quantidade máxima de artigos relacionados a retornar. |
 
-- `id` (obrigatório): identificador da notícia de referência.
-
-**Exemplo de request:**
-
+### Exemplo de Requisição
 ```http
-GET /api/news/1/related HTTP/1.1
+GET /api/news/e9b276b5-095a-4cb6-b25f-fcbe1e6eb901/related?limit=3 HTTP/1.1
 ```
 
-**Exemplo de chamada com `curl`:**
-
+### Exemplo com cURL
 ```bash
-curl "http://localhost:3000/api/news/1/related"
+curl "http://localhost:3000/api/news/e9b276b5-095a-4cb6-b25f-fcbe1e6eb901/related?limit=3"
 ```
 
-**Resposta de sucesso:**
-
-- Código: `200 OK`
-
+### Resposta de Sucesso (`200 OK`)
 ```json
 {
   "success": true,
   "data": {
     "news": [
       {
-        "id": 2,
-        "title": "Related news title",
-        "category": "technology"
+        "id": "f8a192c3-124b-4a5b-912c-0e1d2f3a4b02",
+        "category_id": "c1f7a0b5-78e2-45e3-982e-9d8a1c6e1002",
+        "title": "Outra notícia da categoria de tecnologia",
+        "description": "Resumo complementar sobre inovações tecnológicas.",
+        "url": "https://exemplo.com/noticias/outra-noticia-tech",
+        "author": "Equipe Editorial",
+        "image_url": "https://exemplo.com/imagens/tech2.jpg",
+        "language": "pt-BR",
+        "source": "Portal Tech",
+        "published_at": "2026-11-23T16:30:00.000Z"
       }
     ]
   }
 }
 ```
 
-**Respostas de erro:**
-
-- `400 Bad Request`: ID inválido ou malformado.
-- `404 Not Found`: artigo de referência inexistente.
-
-Se o artigo de referência existir, mas nenhuma notícia relacionada for encontrada, a API retorna `200 OK` com uma lista vazia.
-
----
-
-### **Fluxograma das rotas `api/news`**
+### Respostas de Erro
+- **`404 Not Found`**: Caso a notícia de referência (`:id`) não exista.
+```json
+{
+  "success": false,
+  "error": "Notícia não encontrada"
+}
+```
 
 ---
 
-**Resumo:** diagrama de fluxo das rotas de notícias, incluindo validação inicial da requisição, consulta ao cache, acesso ao banco de dados em caso de ausência no cache, verificação dos resultados, personalização e reordenação do feed, tratamento de erros e registro de interações para atualizar as preferências do usuário.
+## 5. Fluxograma das Rotas
 
-<img src="diagrams/news-diagram.svg" height="1000"> 
+Fluxo de requisição das rotas de notícias, abrangendo checagem de cache Redis, consulta ao SQLite e retorno:
+
+<img src="diagrams/news-diagram.svg" height="900">

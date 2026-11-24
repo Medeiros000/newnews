@@ -1,391 +1,228 @@
-# Guia para adicionar novas rotas
+# Guia de Criação de Rotas e Seeds (Backend POO)
 
-Este documento mostra como criar e registrar novas rotas na API NewNews.
+Este guia orienta como criar, estruturar e registrar novas rotas na API do New News, além de documentar a execução e manutenção dos scripts de seed no banco de dados.
 
-## Arquitetura atual
+---
 
-As rotas são organizadas por recurso:
+## 1. Arquitetura do Backend
+
+O backend adota o paradigma de **Programação Orientada a Objetos (POO)** com camadas de responsabilidade bem definidas:
 
 ```text
 src/
-├── app.ts
-├── lib/
-│   └── prisma.ts
-└── routes/
-    ├── health.ts
-    └── users.ts
+├── models/entities/    # Entidades de domínio (classes que representam os dados)
+├── mappers/            # Conversores entre os tipos do Prisma e as entidades de domínio
+├── services/           # Regra de negócio, cache e acesso a dados via PrismaService
+│   └── interfaces/     # Contratos dos serviços (ex.: INewsService)
+├── controllers/        # Orquestração da requisição, extração de parâmetros e respostas HTTP
+│   └── interfaces/     # Contratos dos controllers (ex.: INewsController)
+├── routes/             # Configuração e mapeamento dos endpoints no Express Router
+├── app.ts              # Configuração global do Express e montagem dos routers
+└── server.ts           # Inicialização e escuta da porta HTTP
 ```
 
-Cada arquivo de rota exporta um `Router` do Express. O arquivo
-[`src/app.ts`](./src/app.ts) registra esse router em um prefixo da API.
+---
 
-Por exemplo, o router de usuários é registrado assim:
+## 2. Passo a Passo: Adicionando um Novo Recurso
 
-```ts
-app.use("/api/users", usersRouter);
+Para exemplificar o fluxo, consideremos a adição de um novo recurso fictício `Tag`:
+
+### Passo 2.1: Definir o Model no Prisma e Migrar
+Adicione o model em `prisma/schema.prisma`:
+```prisma
+model Tag {
+    id   String @id @default(uuid())
+    name String @unique
+
+    @@map("tags")
+}
 ```
-
-Com isso, uma rota `GET /` declarada em `users.ts` fica disponível como
-`GET /api/users`.
-
-## Passo a passo
-
-### 1. Criar o arquivo da rota
-
-Crie um arquivo em `src/routes/`. Para exemplificar, vamos criar rotas de
-notícias:
-
-```text
-src/routes/news.ts
-```
-
-### 2. Criar o router
-
-Use `Router` para manter as rotas do recurso isoladas:
-
-```ts
-import { Router } from "express";
-
-export const newsRouter = Router();
-
-newsRouter.get("/", (_request, response) => {
-	response.json({ data: [] });
-});
-```
-
-### 3. Registrar o router no `app.ts`
-
-Importe o router e registre-o com o prefixo desejado:
-
-```ts
-import { newsRouter } from "./routes/news.js";
-
-app.use("/api/news", newsRouter);
-```
-
-A rota criada estará disponível em:
-
-```text
-GET http://localhost:3000/api/news
-```
-
-O projeto usa módulos ESM. Por isso, imports locais devem usar a extensão
-`.js`, mesmo quando o arquivo de origem é TypeScript.
-
-## Validando dados com Zod
-
-Os dados recebidos do cliente devem ser validados antes de serem usados. Para
-um corpo JSON, use `safeParse`:
-
-```ts
-import { Router } from "express";
-import { z } from "zod";
-
-const createNewsSchema = z.object({
-	title: z.string().trim().min(1).max(200),
-	summary: z.string().trim().min(1).max(500),
-	category: z.string().trim().min(1).max(80),
-});
-
-export const newsRouter = Router();
-
-newsRouter.post("/", (request, response) => {
-	const result = createNewsSchema.safeParse(request.body);
-
-	if (!result.success) {
-		response.status(400).json({
-			error: "Invalid request body",
-			issues: result.error.issues,
-		});
-		return;
-	}
-
-	response.status(201).json({ data: result.data });
-});
-```
-
-### Parâmetros de rota
-
-Para validar um parâmetro como `/api/news/:id`:
-
-```ts
-const idSchema = z.coerce.number().int().positive();
-
-newsRouter.get("/:id", (request, response) => {
-	const result = idSchema.safeParse(request.params.id);
-
-	if (!result.success) {
-		response.status(400).json({
-			error: "Invalid news id",
-			issues: result.error.issues,
-		});
-		return;
-	}
-
-	response.json({ data: { id: result.data } });
-});
-```
-
-### Parâmetros de consulta
-
-Para validar filtros e paginação:
-
-```ts
-const listNewsSchema = z.object({
-	category: z.string().trim().min(1).optional(),
-	page: z.coerce.number().int().positive().default(1),
-	limit: z.coerce.number().int().positive().max(100).default(20),
-});
-
-newsRouter.get("/", (request, response) => {
-	const result = listNewsSchema.safeParse(request.query);
-
-	if (!result.success) {
-		response.status(400).json({
-			error: "Invalid query parameters",
-			issues: result.error.issues,
-		});
-		return;
-	}
-
-	response.json({ data: [], meta: result.data });
-});
-```
-
-## Usando Prisma em uma rota
-
-O cliente Prisma compartilhado está em
-[`src/lib/prisma.ts`](./src/lib/prisma.ts). Importe-o na rota e trate erros
-assíncronos com `try/catch`, encaminhando o erro para o middleware global com
-`next(error)`:
-
-```ts
-import { Router } from "express";
-import { prisma } from "../lib/prisma.js";
-
-export const newsRouter = Router();
-
-newsRouter.get("/", async (_request, response, next) => {
-	try {
-		const news = await prisma.news.findMany({
-			orderBy: { publishedAt: "desc" },
-		});
-
-		response.json({ data: news });
-	} catch (error) {
-		next(error);
-	}
-});
-```
-
-Esse exemplo pressupõe que o model `News` já exista no
-[`prisma/schema.prisma`](./prisma/schema.prisma). Depois de alterar o schema:
-
+Gere o Prisma Client e crie a migration:
 ```bash
-npm run db:migrate -- --name add_news
+npm run db:migrate -- --name add_tags
 npm run db:generate
 ```
 
-## Exemplo completo
+---
 
-O exemplo a seguir combina validação, Prisma e tratamento de erro:
+### Passo 2.2: Criar a Entidade de Domínio e o Mapper
+Crie `src/models/entities/Tag.ts`:
+```ts
+export class Tag {
+  constructor(
+    public readonly id: string,
+    public readonly name: string,
+  ) {}
+}
+```
+Crie `src/mappers/TagMapper.ts`:
+```ts
+import { Tag } from '../models/entities/Tag.js';
+import type { Tag as PrismaTag } from '../../generated/prisma/client.js';
+
+export class TagMapper {
+  static fromPrisma(prismaTag: PrismaTag): Tag {
+    return new Tag(prismaTag.id, prismaTag.name);
+  }
+}
+```
+
+---
+
+### Passo 2.3: Criar a Interface e o Service
+Crie a interface `src/services/interfaces/ITagService.ts`:
+```ts
+import type { Tag } from '../../models/entities/Tag.js';
+
+export interface ITagService {
+  getAllTags(): Promise<Tag[]>;
+}
+```
+
+Implemente o serviço em `src/services/TagService.ts`:
+```ts
+import { PrismaService } from './PrismaService.js';
+import { TagMapper } from '../mappers/TagMapper.js';
+import type { ITagService } from './interfaces/ITagService.js';
+import type { Tag } from '../models/entities/Tag.js';
+
+export class TagService implements ITagService {
+  constructor(
+    private readonly prisma: PrismaService = PrismaService.getInstance(),
+  ) {}
+
+  async getAllTags(): Promise<Tag[]> {
+    const tags = await this.prisma.tag.findMany({ orderBy: { name: 'asc' } });
+    return tags.map(TagMapper.fromPrisma);
+  }
+}
+```
+
+---
+
+### Passo 2.4: Criar o Controller
+Crie a interface `src/controllers/interfaces/ITagController.ts` e a classe `src/controllers/TagController.ts`:
 
 ```ts
-import { Router } from "express";
-import { z } from "zod";
-import { prisma } from "../lib/prisma.js";
+import type { Request, Response, NextFunction } from 'express';
+import { TagService } from '../services/TagService.js';
+import type { ITagService } from '../services/interfaces/ITagService.js';
 
-const createNewsSchema = z.object({
-	title: z.string().trim().min(1).max(200),
-	summary: z.string().trim().min(1).max(500),
-	category: z.string().trim().min(1).max(80),
-});
+export class TagController {
+  constructor(private readonly service: ITagService = new TagService()) {}
 
-export const newsRouter = Router();
-
-newsRouter.get("/", async (_request, response, next) => {
-	try {
-		const news = await prisma.news.findMany({
-			orderBy: { publishedAt: "desc" },
-		});
-
-		response.json({ data: news });
-	} catch (error) {
-		next(error);
-	}
-});
-
-newsRouter.post("/", async (request, response, next) => {
-	const result = createNewsSchema.safeParse(request.body);
-
-	if (!result.success) {
-		response.status(400).json({
-			error: "Invalid request body",
-			issues: result.error.issues,
-		});
-		return;
-	}
-
-	try {
-		const news = await prisma.news.create({
-			data: result.data,
-		});
-
-		response.status(201).json({ data: news });
-	} catch (error) {
-		next(error);
-	}
-});
+  async getAllTags(_request: Request, response: Response, next: NextFunction): Promise<void> {
+    try {
+      const tags = await this.service.getAllTags();
+      response.status(200).json({
+        success: true,
+        data: tags,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+}
 ```
 
-Depois, registre o router no `app.ts`:
+---
 
+### Passo 2.5: Criar a Rota e Registrar no `app.ts`
+Crie `src/routes/TagRouter.ts`:
 ```ts
-import { newsRouter } from "./routes/news.js";
+import { Router } from 'express';
+import { TagController } from '../controllers/TagController.js';
 
-app.use("/api/news", newsRouter);
+export class TagRouter {
+  public readonly router: Router;
+  private readonly controller: TagController;
+
+  constructor(controller: TagController = new TagController()) {
+    this.router = Router();
+    this.controller = controller;
+    this.setupRoutes();
+  }
+
+  private setupRoutes(): void {
+    this.router.get('/', this.controller.getAllTags.bind(this.controller));
+  }
+}
 ```
 
-## Testando a nova rota
+No arquivo `src/app.ts`, instancie e registre o router:
+```ts
+import { TagRouter } from './routes/TagRouter.js';
 
-Inicie a API:
-
-```bash
-npm run dev
+// dentro do método setupRoutes():
+const tagRouter = new TagRouter();
+this.instance.use('/api/tags', tagRouter.router);
 ```
 
-Liste os registros:
+> **Atenção:** Como o backend utiliza ECMAScript Modules (`"type": "module"`), os imports locais TypeScript exigem a extensão `.js` (ex.: `./routes/TagRouter.js`).
 
-```bash
-curl http://localhost:3000/api/news
-```
+---
 
-Crie um registro:
+## 3. Seeds do Banco de Dados
 
-```bash
-curl -X POST http://localhost:3000/api/news \
-	-H "Content-Type: application/json" \
-	-d '{"title":"Nova notícia","summary":"Resumo da notícia","category":"Tecnologia"}'
-```
+Os seeds servem para popular o banco de dados com dados essenciais ou de desenvolvimento de forma idempotente (podem rodar várias vezes sem duplicar registros).
 
-Compile o projeto para verificar tipos e imports:
-
-```bash
-npm run build
-```
-
-## Criando um arquivo de seed
-
-Seeds são scripts usados para inserir dados iniciais ou dados de
-desenvolvimento no banco. No Prisma 7, o caminho do seed é configurado em
-[`prisma.config.ts`](./prisma.config.ts):
-
+### Como o Seed Está Configurado
+No Prisma 7, o seed é definido em `prisma.config.ts`:
 ```ts
 export default defineConfig({
-	schema: "prisma/schema.prisma",
-	migrations: {
-		path: "prisma/migrations",
-		seed: "tsx prisma/seed.ts",
-	},
-	datasource: {
-		url: process.env.DATABASE_URL,
-	},
+  schema: 'prisma/schema.prisma',
+  migrations: {
+    path: 'prisma/migrations',
+    seed: 'tsx prisma/seed.ts',
+  },
+  datasource: {
+    url: process.env.DATABASE_URL,
+  },
 });
 ```
 
-### 1. Criar `prisma/seed.ts`
-
-O seed deve carregar as variáveis de ambiente, criar o adapter do banco e
-instanciar o Prisma Client:
+### Script de Seed Real (`backend/prisma/seed.ts`)
+O seed oficial popula as categorias necessárias para o funcionamento da ingestão e dos filtros do frontend:
 
 ```ts
-import "dotenv/config";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
-import { PrismaClient } from "../generated/prisma/client.js";
+import 'dotenv/config';
+import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+import { PrismaClient } from '../generated/prisma/client.js';
 
 const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl) throw new Error('DATABASE_URL is required');
 
-if (!databaseUrl) {
-	throw new Error("DATABASE_URL is required to run the seed");
-}
-
-const adapter = new PrismaBetterSqlite3({ url: databaseUrl });
+const adapter = new PrismaBetterSqlite3({ url: databaseUrl, timeout: 10_000 });
 const prisma = new PrismaClient({ adapter });
 
-const users = [
-	{
-		email: "ana.silva@newnews.com",
-		name: "Ana Silva",
-	},
-	{
-		email: "bruno.santos@newnews.com",
-		name: "Bruno Santos",
-	},
+const categories = [
+  { name: 'general', label: 'Geral', icon: 'U+1F4F0' },
+  { name: 'science_technology', label: 'Tecnologia', icon: 'U+1F4BB' },
+  { name: 'sport', label: 'Esportes', icon: 'U+1F3C0' },
+  // ...
 ];
 
 try {
-	for (const user of users) {
-		await prisma.user.upsert({
-			where: { email: user.email },
-			update: { name: user.name },
-			create: user,
-		});
-	}
-
-	console.log(`Seed concluído: ${users.length} usuários processados.`);
+  for (const category of categories) {
+    await prisma.category.upsert({
+      where: { name: category.name },
+      update: { label: category.label, icon: category.icon },
+      create: category,
+    });
+  }
 } finally {
-	await prisma.$disconnect();
+  await prisma.$disconnect();
 }
 ```
 
-O `upsert` procura o registro pelo campo único `email`. Se o usuário já
-existir, atualiza o nome; caso contrário, cria um novo registro. Dessa forma,
-o seed pode ser executado várias vezes sem duplicar dados.
-
-### 2. Garantir o script no `package.json`
-
-Adicione um comando para executar o seed:
-
-```json
-{
-	"scripts": {
-		"db:seed": "prisma db seed"
-	}
-}
+### Como Executar os Seeds
+Após rodar as migrações:
+```bash
+npm run db:seed
 ```
-
-### 3. Aplicar a migration e executar o seed
-
-Execute as migrations antes do seed para garantir que a tabela utilizada já
-exista:
-
+Ou no fluxo completo inicial:
 ```bash
 npm run db:migrate
 npm run db:generate
 npm run db:seed
 ```
-
-Se estiver aplicando migrations já criadas em outro ambiente, use:
-
-```bash
-npx prisma migrate deploy
-npm run db:seed
-```
-
-Para conferir os registros inseridos, consulte a rota de usuários:
-
-```bash
-curl http://localhost:3000/api/users
-```
-
-## Convenções recomendadas
-
-- Organize cada recurso em seu próprio arquivo dentro de `src/routes/`.
-- Use nomes no plural para os recursos, como `/api/users` e `/api/news`.
-- Valide corpos, parâmetros e query strings com Zod.
-- Retorne `400` para entradas inválidas.
-- Retorne `201` após criar um recurso.
-- Encaminhe erros inesperados com `next(error)`.
-- Não exponha detalhes internos de erros nas respostas HTTP.
-- Use `response.json({ data: ... })` para respostas de sucesso.
-- Use imports locais com extensão `.js`.
