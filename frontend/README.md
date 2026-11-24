@@ -1,107 +1,119 @@
 # Frontend — New News
 
-Aplicação web do New News, construída com **React + JavaScript + Vite**.
+Aplicação web do New News, construída com **React 19 + JavaScript + Vite**.
 
-> **Antes de começar:** abra a pasta `frontend/` diretamente na sua IDE (não o repositório raiz). Isso garante que linting, IntelliSense e extensões funcionem corretamente.
+> **Antes de começar:** Abra a pasta `frontend/` diretamente na sua IDE (e não o repositório raiz). Isso garante que o IntelliSense, linting e resolução de aliases funcionem corretamente.
 
 ---
 
 ## 🚀 Primeiros Passos
 
+Na pasta `frontend/`, instale as dependências:
+
 ```bash
-npm install   # instala as dependências
-npm run dev   # inicia o servidor em http://localhost:5173
+npm install
 ```
 
+Inicie o servidor de desenvolvimento:
+
+```bash
+npm run dev
+```
+
+A aplicação estará disponível em:
+```text
+http://localhost:5173
+```
+*(Quando executado via Docker Compose a partir da raiz, a aplicação é servida na porta 8080).*
+
 ---
 
-## 🧰 Scripts
+## 🧰 Scripts Disponíveis
 
-| Script            | O que faz                             |
-| ----------------- | ------------------------------------- |
-| `npm run dev`     | Servidor de desenvolvimento (Vite)    |
-| `npm run build`   | Build de produção em `dist/`          |
-| `npm run preview` | Pré-visualiza o build localmente      |
-| `npm run lint`    | Verifica problemas de código (Oxlint) |
-| `npm run format`  | Formata o código (Prettier)           |
+| Script | O que faz |
+| :--- | :--- |
+| `npm run dev` | Inicia o servidor local de desenvolvimento (Vite). |
+| `npm run build` | Compila os arquivos para produção no diretório `dist/`. |
+| `npm run preview` | Pré-visualiza localmente o build de produção. |
+| `npm test` | Executa os testes unitários uma vez com Vitest. |
+| `npm run test:watch` | Executa os testes em modo interativo e contínuo. |
+| `npm run lint` | Analisa problemas no código utilizando Oxlint. |
+| `npm run format` | Formata automaticamente o código com Prettier. |
 
 ---
 
-## 🛠️ Stack
+## 🛠️ Stack Tecnológica
 
-| Responsabilidade | Tecnologia         |
-| ---------------- | ------------------ |
-| UI               | React 19           |
-| Bundler          | Vite               |
-| Roteamento       | React Router DOM 7 |
-| Estado global    | Zustand 5          |
-| HTTP Client      | Axios              |
-| Estilo           | Bootstrap 5        |
-| Ícones           | Tabler Icons React |
-| Linter           | Oxlint             |
-| Formatador       | Prettier           |
-| Containerização  | Docker             |
+| Camada | Tecnologia |
+| :--- | :--- |
+| **Interface (UI)** | React 19 |
+| **Bundler** | Vite |
+| **Roteamento** | React Router DOM 7 |
+| **Estado Global** | Zustand 5 |
+| **Cliente HTTP** | Axios |
+| **Estilização** | Bootstrap 5 + CSS Puro |
+| **Ícones** | Tabler Icons React |
+| **Testes** | Vitest |
+| **Linter / Formatador** | Oxlint / Prettier |
 
 ---
 
 ## ⚙️ Variáveis de Ambiente
 
-Crie um arquivo `.env` na raiz de `frontend/` se precisar sobrescrever os padrões:
+Crie um arquivo `.env` na raiz da pasta `frontend/` se desejar customizar a URL da API backend:
 
-| Variável             | Padrão | Descrição                                              |
-| -------------------- | ------ | ------------------------------------------------------ |
-| `VITE_API_BASE_URL`  | `/api` | URL base da API backend                                |
-| `VITE_USE_MOCK`      | `true` | `false` desativa o modo mock e usa a API real          |
-| `VITE_MOCK_DELAY_MS` | `250`  | Delay artificial das respostas mock (em milissegundos) |
+| Variável | Padrão | Descrição |
+| :--- | :--- | :--- |
+| `VITE_API_BASE_URL` | `/api` | URL base utilizada pelo Axios para comunicação com o backend. |
 
-> Por padrão, o app roda em **modo mock** — sem precisar de um backend em execução.
+> Em desenvolvimento local separado (sem proxy), aponte para:  
+> `VITE_API_BASE_URL=http://localhost:3000/api`
 
 ---
 
 ## 📂 Estrutura de Pastas
 
 ```text
-src/
-├── assets/       # Arquivos estáticos (imagens, fontes, ícones)
-├── components/   # Componentes (um diretório por componente com seu CSS e index.js)
-├── hooks/        # Custom hooks (lógica reutilizável com estado)
-├── mocks/        # Dados e adaptador mock para desenvolvimento sem API
-├── pages/        # Uma pasta por rota contendo o componente da página e seu CSS
-├── services/     # Chamadas HTTP organizadas por domínio (facade pattern)
-├── stores/       # Estado global com Zustand, um arquivo por domínio
-├── utils/        # Funções utilitárias puras (config, datas)
-├── App.jsx       # Componente raiz e definição de rotas
-├── index.css     # Reset CSS e variáveis globais
-└── main.jsx      # Monta o React no DOM
+frontend/src/
+├── components/   # Componentes de interface (Navbar, Sidebar, NewsCard, ToastContainer, etc.)
+├── hooks/        # Custom hooks reutilizáveis (useNewsFeed)
+├── pages/        # Componentes de página (HomePage, NewsPage, ConfigPage, LoginPage, RegisterPage)
+├── schemas/      # Schemas de validação de formulários (authSchema)
+├── services/     # Serviços de integração HTTP com Axios (newsService, userService)
+├── stores/       # Gerenciamento de estado global com Zustand (bookmarks, navigation, theme, toast, user)
+├── utils/        # Configurações globais e funções utilitárias
+├── App.jsx       # Componente raiz e definição das rotas do React Router
+├── index.css     # Estilos globais e reset
+└── main.jsx      # Ponto de entrada que inicializa a aplicação no DOM
 ```
-
-Cada pasta é um **módulo** com um `index.js` barrel que centraliza as exportações.
 
 ---
 
-## 📐 Convenções
+## 📐 Convenções de Código
 
-### Imports
-
-Use sempre o alias `@/` no lugar de caminhos relativos. Para importações **entre módulos**, use sempre o barrel (`index.js`) da pasta de destino:
+### 1. Imports com Alias `@/`
+Utilize sempre o alias `@/` apontando para `src/`. Em importações entre módulos, utilize os barrels (`index.js`):
 
 ```js
-// ✅ correto — cross-module via barrel
+// ✅ Correto
 import { useNavigationStore } from '@/stores';
 import { Navbar } from '@/components/Navbar';
 
-// ✅ correto — intra-módulo (dentro da mesma pasta)
-import { useToastStore } from './toastStore.js';
-
-// ❌ evitar — cross-module sem barrel
-import { useNavigationStore } from '@/stores/navigationStore.js';
-import { Navbar } from '@/components/Navbar/Navbar.jsx';
+// ❌ Evitar
+import { useNavigationStore } from '../../stores/navigationStore.js';
 ```
 
-### Nomenclatura
+### 2. Nomenclatura e Exportações
+- **Componentes:** Use `PascalCase` e utilize exportações nomeadas (`export function NewsCard(...)`).
+- **Hooks:** Use o prefixo `use` (`useNewsFeed.js`).
+- **Stores:** Use o sufixo `Store` (`themeStore.js`).
+- **Serviços:** Use o sufixo `Service` (`newsService.js`).
 
-- Componentes e Páginas → `PascalCase`, armazenados em pastas próprias com um `index.js` (ex: `components/NewsCard/NewsCard.jsx`)
-- Exportação de Componentes → Use sempre exportações nomeadas (`export function`), evite `export default`
-- Hooks → prefixo `use` (ex: `useNewsFeed.js`)
-- Stores → sufixo `Store` (ex: `stores/bookmarksStore.js`)
-- Serviços → sufixo `Service` (ex: `services/newsService.js`)
+---
+
+## 📖 Documentação Adicional
+
+Para entender a arquitetura completa dos componentes, o gerenciamento de stores no Zustand e o fluxo de dados com a API, consulte a documentação técnica:
+
+- 🏛️ **[Arquitetura do Frontend](../docs/frontend/arquitetura.md)**
+- 🔄 **[Gerenciamento de Estado e Serviços](../docs/frontend/estado-e-servicos.md)**
