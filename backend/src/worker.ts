@@ -1,7 +1,7 @@
-import { createNewsIngestionWorker } from './workers/NewsIngestionWorker.js';
+import { newsIngestionWorker } from './workers/NewsIngestionWorker.js';
 import { PrismaService } from './services/PrismaService.js';
 
-const worker = createNewsIngestionWorker();
+const worker = newsIngestionWorker;
 worker.start();
 
 const shutdown = async (signal: 'SIGINT' | 'SIGTERM'): Promise<void> => {

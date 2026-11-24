@@ -5,4 +5,5 @@ export interface INewsController {
   searchNews(request: Request, response: Response, next: NextFunction): Promise<void>;
   getNewsById(request: Request, response: Response, next: NextFunction): Promise<void>;
   getRelatedNews(request: Request, response: Response, next: NextFunction): Promise<void>;
+  startNewsIngestion(request: Request, response: Response): void;
 }

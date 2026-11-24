@@ -60,3 +60,5 @@ export class NewsIngestionWorker {
 export function createNewsIngestionWorker(cache?: CacheProvider): NewsIngestionWorker {
 	return new NewsIngestionWorker(new NewsIngestionPipeline(cache ?? createCacheProvider()));
 }
+
+export const newsIngestionWorker = createNewsIngestionWorker();

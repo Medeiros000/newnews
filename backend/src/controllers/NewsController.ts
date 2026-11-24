@@ -3,6 +3,7 @@ import { QueryOptions } from '../queries/QueryOptions.js';
 import { NewsService } from '../services/NewsService.js';
 import { INewsService } from '../services/interfaces/INewsService.js';
 import { INewsController } from './interfaces/INewsController.js';
+import { newsIngestionWorker } from '../workers/NewsIngestionWorker.js';
 
 export class NewsController implements INewsController {
 	public constructor(private readonly service: INewsService = new NewsService()) { }
@@ -21,6 +22,14 @@ export class NewsController implements INewsController {
 
 	public async searchNews(request: Request, response: Response, next: NextFunction): Promise<void> {
 		return this.getNews(request, response, next);
+	}
+
+	public startNewsIngestion(_request: Request, response: Response): void {
+		newsIngestionWorker.start();
+		response.status(202).json({
+			success: true,
+			message: 'Ingestão de notícias ativada.',
+		});
 	}
 
 	public async getNewsById(
