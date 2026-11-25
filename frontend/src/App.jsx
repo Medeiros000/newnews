@@ -27,6 +27,7 @@ export function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/news" element={<NewsPage />} />
+          <Route path="/news/:slug/:idPrefix" element={<NewsPage />} />
           <Route path="/config" element={<ConfigPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/login" element={<LoginPage />} />

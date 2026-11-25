@@ -3,7 +3,7 @@ import { QueryOptions } from '../queries/QueryOptions.js';
 import { NewsService } from '../services/NewsService.js';
 import { INewsService } from '../services/interfaces/INewsService.js';
 import { INewsController } from './interfaces/INewsController.js';
-import { newsIngestionWorker } from '../workers/NewsIngestionWorker.js';
+import { getNewsIngestionWorker } from '../workers/NewsIngestionWorker.js';
 
 export class NewsController implements INewsController {
 	public constructor(private readonly service: INewsService = new NewsService()) { }
@@ -25,7 +25,7 @@ export class NewsController implements INewsController {
 	}
 
 	public startNewsIngestion(_request: Request, response: Response): void {
-		newsIngestionWorker.start();
+		getNewsIngestionWorker().start();
 		response.status(202).json({
 			success: true,
 			message: 'Ingestão de notícias ativada.',
@@ -48,6 +48,41 @@ export class NewsController implements INewsController {
 			}
 
 			response.json({ success: true, data: result });
+		} catch (error) {
+			next(error);
+		}
+	}
+
+	public async getNewsBySlugAndIdPrefix(
+		request: Request,
+		response: Response,
+		next: NextFunction,
+	): Promise<void> {
+		try {
+			const slugParam = Array.isArray(request.params.slug) ? request.params.slug[0] : request.params.slug;
+			const idPrefixParam = Array.isArray(request.params.idPrefix) ? request.params.idPrefix[0] : request.params.idPrefix;
+
+			const slug = slugParam?.trim();
+			const idPrefix = idPrefixParam?.trim();
+
+			if (!slug || !idPrefix || idPrefix.length !== 8) {
+				response.status(400).json({
+					success: false,
+					error: 'Slug e prefixo de 8 caracteres do ID são obrigatórios e devem ser válidos.',
+				});
+				return;
+			}
+
+			const result = await this.service.getNewsBySlugAndIdPrefix(slug, idPrefix);
+			if (!result) {
+				response.status(404).json({
+					success: false,
+					error: 'Notícia não encontrada',
+				});
+				return;
+			}
+
+			response.status(200).json({ success: true, data: result });
 		} catch (error) {
 			next(error);
 		}

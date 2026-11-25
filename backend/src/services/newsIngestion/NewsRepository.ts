@@ -2,6 +2,7 @@ import { PrismaService } from '../PrismaService.js';
 import { Category } from '../../models/entities/Category.js';
 import { NormalizedNews } from './NewsNormalizer.js';
 import { CategoryMapper } from '../../mappers/CategoryMapper.js';
+import { generateSlug } from '../../utils/slug.js';
 
 export class NewsRepository {
 	private readonly prisma: PrismaService;
@@ -56,18 +57,24 @@ export class NewsRepository {
 				batchUrls.add(item.url);
 				return true;
 			})
-			.map((item) => ({
-				...(item.id ? { id: item.id } : {}),
-				category_id: this.getCategoryId(item.category),
-				title: item.title || item.description || '',
-				description: item.description || '',
-				url: item.url,
-				author: item.author,
-				image_url: item.image_url || 'https://via.placeholder.com/800x400',
-				language: item.language || 'pt-BR',
-				source: item.source,
-				published_at: item.published_at,
-			}));
+			.map((item) => {
+				const title = item.title || item.description || '';
+				const slug = item.slug || generateSlug(title);
+
+				return {
+					...(item.id ? { id: item.id } : {}),
+					category_id: this.getCategoryId(item.category),
+					title,
+					slug,
+					description: item.description || '',
+					url: item.url,
+					author: item.author,
+					image_url: item.image_url || 'https://via.placeholder.com/800x400',
+					language: item.language || 'pt-BR',
+					source: item.source,
+					published_at: item.published_at,
+				};
+			});
 		const result = data.length === 0 ? { count: 0 } : await this.prisma.news.createMany({ data });
 		console.log(`✅ ${result.count} notícias salvas no banco de dados.`);
 		return result;

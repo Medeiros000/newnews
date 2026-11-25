@@ -14,6 +14,7 @@ export class NewsMapper {
       prismaNews.language,
       prismaNews.source,
       prismaNews.published_at,
+      prismaNews.slug ?? '',
     );
   }
 }

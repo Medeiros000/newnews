@@ -10,5 +10,6 @@ export class News {
 		public readonly language: string,
 		public readonly source: string,
 		public readonly published_at: Date,
+		public readonly slug: string = '',
 	) {}
 }

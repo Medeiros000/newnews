@@ -1,7 +1,7 @@
 import { QueryOptions } from '../queries/QueryOptions.js';
 import { PrismaService } from './PrismaService.js';
 import type { CacheProvider } from './cache/CacheProvider.js';
-import { createCacheProvider } from './cache/createCacheProvider.js';
+import { getSharedCacheProvider } from './cache/createCacheProvider.js';
 import { INewsService } from './interfaces/INewsService.js';
 import { News } from '../models/entities/News.js';
 import { NewsMapper } from '../mappers/NewsMapper.js';
@@ -9,7 +9,7 @@ import { NewsMapper } from '../mappers/NewsMapper.js';
 export class NewsService implements INewsService {
   public constructor(
     private readonly prisma: PrismaService = PrismaService.getInstance(),
-    private readonly cache: CacheProvider = createCacheProvider(),
+    private readonly cache: CacheProvider = getSharedCacheProvider(),
   ) {}
 
   public async getNews(queryOptions: QueryOptions): Promise<News[]> {
@@ -78,6 +78,38 @@ export class NewsService implements INewsService {
     }
 
     const mappedNews = NewsMapper.fromPrisma(news);
+    await this.cache.set(cacheKey, mappedNews, 300);
+    return mappedNews;
+  }
+
+  public async getNewsBySlugAndIdPrefix(slug: string, idPrefix: string): Promise<News | null> {
+    const cleanSlug = slug?.trim();
+    const cleanPrefix = idPrefix?.trim();
+
+    if (!cleanSlug || !cleanPrefix || cleanPrefix.length !== 8) {
+      return null;
+    }
+
+    const cacheKey = `news:slug:${cleanSlug}:prefix:${cleanPrefix}`;
+    const cachedNews = await this.cache.get<News>(cacheKey);
+    if (cachedNews) {
+      return cachedNews;
+    }
+
+    const newsItem = await this.prisma.news.findFirst({
+      where: {
+        slug: cleanSlug,
+        id: {
+          startsWith: cleanPrefix,
+        },
+      },
+    });
+
+    if (!newsItem) {
+      return null;
+    }
+
+    const mappedNews = NewsMapper.fromPrisma(newsItem);
     await this.cache.set(cacheKey, mappedNews, 300);
     return mappedNews;
   }

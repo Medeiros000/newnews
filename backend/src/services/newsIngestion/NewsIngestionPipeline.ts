@@ -3,7 +3,7 @@ import { NewsNormalizer } from './NewsNormalizer.js';
 import { NewsValidator } from './NewsValidator.js';
 import { NewsRepository } from './NewsRepository.js';
 import type { CacheProvider } from '../cache/CacheProvider.js';
-import { createCacheProvider } from '../cache/createCacheProvider.js';
+import { getSharedCacheProvider } from '../cache/createCacheProvider.js';
 
 export class NewsIngestionPipeline {
 	private readonly repository: NewsRepository;
@@ -12,7 +12,7 @@ export class NewsIngestionPipeline {
 	private readonly validator: NewsValidator;
 	private readonly cache: CacheProvider;
 
-	constructor(cache: CacheProvider = createCacheProvider()) {
+	constructor(cache: CacheProvider = getSharedCacheProvider()) {
 		this.cache = cache;
 		this.repository = new NewsRepository();
 		this.apiClient = new CurrentsApiClient();

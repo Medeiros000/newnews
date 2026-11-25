@@ -11,7 +11,7 @@ import {
   useBookmarksStore,
   selectNavCategory,
 } from '@/stores';
-import { getTimeBasedGreeting, formatCurrentDateTime } from '@/utils';
+import { getTimeBasedGreeting, formatCurrentDateTime, getNewsPath } from '@/utils';
 import './HomePage.css';
 
 /**
@@ -43,6 +43,7 @@ export function HomePage() {
   const {
     gridArticles,
     heroArticle,
+    heroArticles,
     isLoading,
     isLoadingMore,
     error,
@@ -62,7 +63,7 @@ export function HomePage() {
 
   const handleOpenArticleModal = (article) => {
     markArticleAsRead(article.id);
-    navigate(`/news?id=${article.id}`);
+    navigate(getNewsPath(article));
   };
 
   const searchQuery = debouncedSearchQuery;
@@ -135,6 +136,7 @@ export function HomePage() {
               {shouldShowHero && (
                 <HeroCard
                   article={heroArticle}
+                  articles={heroArticles}
                   onSelectArticle={handleOpenArticleModal}
                 />
               )}
