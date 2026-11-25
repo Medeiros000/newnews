@@ -29,6 +29,7 @@ describe('NewsMapper', () => {
       language: 'pt',
       source: 'example.com',
       published_at: publishedAt,
+      tags: [],
     });
   });
 });

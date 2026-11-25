@@ -18,6 +18,18 @@ model Category {
     @@map("categories")
 }
 
+model Tag {
+    id        String   @id @default(uuid())
+    name      String   @unique
+    slug      String   @unique
+    createdAt DateTime @default(now()) @map("created_at")
+
+    news News[]
+
+    @@index([slug])
+    @@map("tags")
+}
+
 model News {
     id           String   @id @default(uuid())
     category_id  String
@@ -32,7 +44,9 @@ model News {
     published_at DateTime
 
     category Category @relation(fields: [category_id], references: [id])
+    tags     Tag[]
 
     @@index([slug])
+    @@index([title(ops: raw("gin_trgm_ops"))], type: Gin, map: "news_title_trgm_idx")
     @@map("news")
 }

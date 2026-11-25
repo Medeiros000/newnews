@@ -17,6 +17,7 @@ import { APP_CONFIG } from '@/utils';
 export function useNewsFeed({
   navSelectedCategory,
   searchQuery,
+  tagQuery,
   bookmarkedArticleIds,
 }) {
   const [categories, setCategories] = useState(['Todos']);
@@ -68,7 +69,7 @@ export function useNewsFeed({
 
   // True when no search and no category filter are applied
   const isDefaultFeed =
-    effectiveCategory === 'Todos' && !cleanQuery && !isSavedTabActive;
+    effectiveCategory === 'Todos' && !cleanQuery && !tagQuery && !isSavedTabActive;
 
   /**
    * Fetches a page of articles from the API.
@@ -91,6 +92,7 @@ export function useNewsFeed({
         const res = await newsService.getNews({
           category: isSavedTabActive ? 'Todos' : effectiveCategory,
           query: cleanQuery,
+          tag: tagQuery?.trim() || undefined,
           page: targetPage,
           limit: APP_CONFIG.DEFAULT_PAGE_LIMIT,
         });
@@ -125,7 +127,7 @@ export function useNewsFeed({
         }
       }
     },
-    [effectiveCategory, cleanQuery, isSavedTabActive, isDefaultFeed],
+    [effectiveCategory, cleanQuery, tagQuery, isSavedTabActive, isDefaultFeed],
   );
 
   // Re-fetch articles whenever the effective filters change

@@ -11,6 +11,7 @@ import {
   IconUser,
   IconShare,
   IconBookmark,
+  IconTag,
 } from '@tabler/icons-react';
 import './NewsPage.css';
 
@@ -64,7 +65,7 @@ export function NewsPage() {
           // Fetch contextual related articles
           try {
             const relatedRes = await newsService.getRelatedNews(currentArticleId, {
-              limit: 3,
+              limit: 6,
             });
             const list =
               relatedRes.data?.news ||
@@ -78,7 +79,7 @@ export function NewsPage() {
             });
             const filtered = (fallbackRes.data || [])
               .filter((item) => String(item.id) !== String(currentArticleId))
-              .slice(0, 3);
+              .slice(0, 6);
             setRelatedNews(filtered);
           }
         }
@@ -233,6 +234,27 @@ export function NewsPage() {
                       <p className="mb-3 fs-5 lh-base">{article.description}</p>
                     )}
               </section>
+
+              {/* Tags Section */}
+              {Array.isArray(article.tags) && article.tags.length > 0 && (
+                <div className="article-tags-section mt-5 pt-4 border-top">
+                  <h3 className="h6 fw-bold text-uppercase text-secondary tracking-wider mb-3 d-flex align-items-center gap-2">
+                    <IconTag size={18} />
+                    <span>Tags Relacionadas</span>
+                  </h3>
+                  <div className="d-flex flex-wrap gap-2">
+                    {article.tags.map((tag) => (
+                      <Link
+                        key={tag.id || tag.slug}
+                        to={`/?tag=${encodeURIComponent(tag.slug || tag.name)}`}
+                        className="badge text-decoration-none rounded-pill px-3 py-2 article-tag-badge"
+                      >
+                        #{tag.name}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
             </article>
 
             {/* Sidebar column presenting contextually related news recommendations */}
@@ -266,6 +288,18 @@ export function NewsPage() {
                             <h3 className="h6 fw-semibold mb-1 text-truncate-2 text-body">
                               {item.title}
                             </h3>
+                            {Array.isArray(item.tags) && item.tags.length > 0 && (
+                              <div className="d-flex flex-wrap gap-1 mb-1">
+                                {item.tags.slice(0, 2).map((t) => (
+                                  <span
+                                    key={t.id || t.slug}
+                                    className="badge bg-secondary-subtle text-secondary small py-0 px-2 rounded-pill"
+                                  >
+                                    #{t.name}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
                             <span className="text-secondary small d-inline-flex align-items-center gap-1">
                               <IconClock size={14} />
                               {formatTimeAgo(item.published_at)}

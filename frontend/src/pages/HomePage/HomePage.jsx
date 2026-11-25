@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Navbar } from '@/components/Navbar';
 import { Sidebar, SidebarOffcanvas } from '@/components/Sidebar';
 import { ToastContainer } from '@/components/ToastContainer';
@@ -21,6 +21,8 @@ import './HomePage.css';
  */
 export function HomePage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tagFilter = searchParams.get('tag');
   const user = useUserStore((state) => state.user);
   const navSelectedCategory = useNavigationStore(selectNavCategory);
   const navigationItems = useNavigationStore((state) => state.navigationItems);
@@ -58,6 +60,7 @@ export function HomePage() {
   } = useNewsFeed({
     navSelectedCategory,
     searchQuery: debouncedSearchQuery,
+    tagQuery: tagFilter,
     bookmarkedArticleIds,
   });
 
@@ -92,7 +95,24 @@ export function HomePage() {
             </p>
           </header>
 
-          {/* Active search filter contextual banner with reset action */}
+          {/* Active search or tag filter contextual banner with reset action */}
+          {tagFilter && (
+            <div className="alert alert-info py-2 px-3 mb-3 d-flex align-items-center justify-content-between rounded-pill small">
+              <span>
+                Filtrando por tag: <strong>#{tagFilter}</strong>
+              </span>
+              <button
+                className="btn btn-link btn-sm p-0 text-reset text-decoration-none fw-semibold"
+                onClick={() => {
+                  searchParams.delete('tag');
+                  setSearchParams(searchParams);
+                }}
+              >
+                ✕ Limpar tag
+              </button>
+            </div>
+          )}
+
           {searchResultsSummary && (
             <p className="text-secondary mb-3 small">
               {searchResultsSummary}
