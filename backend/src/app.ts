@@ -11,6 +11,10 @@ import { IndexRouter } from './routes/IndexRouter.js';
 import { NewsRouter } from './routes/NewsRouter.js';
 import { HealthRouter } from './routes/HealthRouter.js';
 import { CategoryRouter } from './routes/CategoryRouter.js';
+import { TagRouter } from './routes/TagRouter.js';
+import { AuthRouter } from './routes/AuthRouter.js';
+import { UserRouter } from './routes/UserRouter.js';
+import { AdminRouter } from './routes/AdminRouter.js';
 import cors from 'cors';
 
 export class App {
@@ -35,11 +39,19 @@ export class App {
 		const newsRouter = new NewsRouter();
 		const healthRouter = new HealthRouter();
 		const categoryRouter = new CategoryRouter();
+		const tagRouter = new TagRouter();
+		const authRouter = new AuthRouter();
+		const userRouter = new UserRouter();
+		const adminRouter = new AdminRouter();
 
 		this.instance.use('/', indexRouter.router);
 		this.instance.use('/api/news', newsRouter.router);
 		this.instance.use('/api/health', healthRouter.router);
 		this.instance.use('/api/categories', categoryRouter.router);
+		this.instance.use('/api/tags', tagRouter.router);
+		this.instance.use('/api/auth', authRouter.router);
+		this.instance.use('/api/users', userRouter.router);
+		this.instance.use('/api/admin', adminRouter.router);
 	}
 
 	private setupErrorHandling(): void {

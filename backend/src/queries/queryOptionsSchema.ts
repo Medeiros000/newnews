@@ -66,6 +66,7 @@ export const queryOptionsSchema = z
 			.default(10),
 		query: optionalText(QUERY_MAX_LENGTH),
 		category: optionalText(),
+		tag: optionalText(),
 		sortBy: z.preprocess(
 			(value) => normalizeText(value),
 			z.enum(SORT_FIELDS).optional(),

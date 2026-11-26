@@ -1,34 +1,50 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useParams, useNavigate, Link } from 'react-router-dom';
 import { Navbar } from '@/components/Navbar';
 import { ToastContainer } from '@/components/ToastContainer';
 import { newsService } from '@/services/newsService';
 import { useToastStore, useBookmarksStore, useNavigationStore } from '@/stores';
-import { formatTimeAgo } from '@/utils';
+import { formatTimeAgo, getNewsPath } from '@/utils';
 import {
   IconArrowLeft,
   IconClock,
   IconUser,
   IconShare,
   IconBookmark,
+  IconTag,
 } from '@tabler/icons-react';
 import './NewsPage.css';
 
 /**
  * Detailed News Article View page component.
- * Retrieves and renders full article details specified by the URL query string (`id`),
- * automatically registers read status in bookmarks store, and fetches contextual related
- * articles scored by category proximity and keyword similarity.
+ * Retrieves and renders full article details specified by URL params (slug + idPrefix)
+ * or fallback query string (`id`).
  */
 export function NewsPage() {
   const [searchParams] = useSearchParams();
+  const { slug, idPrefix } = useParams();
   const navigate = useNavigate();
-  const articleId = searchParams.get('id');
+  const queryArticleId = searchParams.get('id');
 
   const [article, setArticle] = useState(null);
   const [relatedNews, setRelatedNews] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [scrollProgress, setScrollProgress] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const totalScroll = document.documentElement.scrollTop;
+      const windowHeight =
+        document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      if (windowHeight > 0) {
+        setScrollProgress((totalScroll / windowHeight) * 100);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const showToast = useToastStore((state) => state.showToastNotification);
   const { bookmarkedArticleIds, toggleArticleBookmark, markArticleAsRead } =
@@ -36,7 +52,7 @@ export function NewsPage() {
   const categoryMap = useNavigationStore((state) => state.categoryMap);
 
   useEffect(() => {
-    if (!articleId) {
+    if (!queryArticleId && (!slug || !idPrefix)) {
       setError('Nenhuma notícia foi selecionada.');
       setIsLoading(false);
       return;
@@ -47,32 +63,40 @@ export function NewsPage() {
         setIsLoading(true);
         setError(null);
 
-        const res = await newsService.getNewsById(articleId);
-        const articleData = res.data;
-        console.log('Fetched article data:', articleData);
-        setArticle(articleData);
-        markArticleAsRead(articleId);
+        let res;
+        if (slug && idPrefix) {
+          res = await newsService.getNewsBySlugAndPrefix(slug, idPrefix);
+        } else {
+          res = await newsService.getNewsById(queryArticleId);
+        }
 
-        // Fetch contextual related articles scored by category, topic, and keyword relevance
-        try {
-          const relatedRes = await newsService.getRelatedNews(articleId, {
-            limit: 3,
-          });
-          const list =
-            relatedRes.data?.news ||
-            (Array.isArray(relatedRes.data) ? relatedRes.data : []);
-          setRelatedNews(list);
-        } catch {
-          // Graceful fallback strategy: fetch top category articles if related endpoint fails
-          const categoryName = categoryMap[articleData?.categoryId];
-          const fallbackRes = await newsService.getNews({
-            category: categoryName || undefined,
-            limit: 6,
-          });
-          const filtered = (fallbackRes.data || [])
-            .filter((item) => String(item.id) !== String(articleId))
-            .slice(0, 3);
-          setRelatedNews(filtered);
+        const articleData = res.data;
+        setArticle(articleData);
+
+        const currentArticleId = articleData?.id || queryArticleId;
+        if (currentArticleId) {
+          markArticleAsRead(currentArticleId);
+
+          // Fetch contextual related articles
+          try {
+            const relatedRes = await newsService.getRelatedNews(currentArticleId, {
+              limit: 6,
+            });
+            const list =
+              relatedRes.data?.news ||
+              (Array.isArray(relatedRes.data) ? relatedRes.data : []);
+            setRelatedNews(list);
+          } catch {
+            const categoryName = categoryMap[articleData?.categoryId];
+            const fallbackRes = await newsService.getNews({
+              category: categoryName || undefined,
+              limit: 6,
+            });
+            const filtered = (fallbackRes.data || [])
+              .filter((item) => String(item.id) !== String(currentArticleId))
+              .slice(0, 6);
+            setRelatedNews(filtered);
+          }
         }
       } catch {
         setError('Não foi possível carregar os detalhes desta notícia.');
@@ -83,7 +107,7 @@ export function NewsPage() {
 
     fetchArticleData();
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [articleId, categoryMap, markArticleAsRead]);
+  }, [slug, idPrefix, queryArticleId, categoryMap, markArticleAsRead]);
 
   const handleShare = () => {
     const currentUrl = window.location.href;
@@ -105,6 +129,15 @@ export function NewsPage() {
 
   return (
     <div className="min-vh-100 d-flex flex-column bg-body">
+      {/* Reading Progress Indicator Bar */}
+      <div
+        className="position-fixed top-0 start-0 z-3 bg-primary"
+        style={{
+          height: '4px',
+          width: `${scrollProgress}%`,
+          transition: 'width 0.1s ease-out',
+        }}
+      />
       <Navbar />
 
       <main className="container-xl py-4 flex-grow-1">
@@ -225,6 +258,27 @@ export function NewsPage() {
                       <p className="mb-3 fs-5 lh-base">{article.description}</p>
                     )}
               </section>
+
+              {/* Tags Section */}
+              {Array.isArray(article.tags) && article.tags.length > 0 && (
+                <div className="article-tags-section mt-5 pt-4 border-top">
+                  <h3 className="h6 fw-bold text-uppercase text-secondary tracking-wider mb-3 d-flex align-items-center gap-2">
+                    <IconTag size={18} />
+                    <span>Tags Relacionadas</span>
+                  </h3>
+                  <div className="d-flex flex-wrap gap-2">
+                    {article.tags.map((tag) => (
+                      <Link
+                        key={tag.id || tag.slug}
+                        to={`/?tag=${encodeURIComponent(tag.slug || tag.name)}`}
+                        className="badge text-decoration-none rounded-pill px-3 py-2 article-tag-badge"
+                      >
+                        #{tag.name}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
             </article>
 
             {/* Sidebar column presenting contextually related news recommendations */}
@@ -235,39 +289,50 @@ export function NewsPage() {
                 </h2>
 
                 <div className="d-flex flex-column gap-3">
-                  {relatedNews.map((item) => (
-                    <a
-                      key={item.id}
-                      href={`/news?id=${item.id}`}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        navigate(`/news?id=${item.id}`);
-                      }}
-                      className="card border-0 shadow-sm rounded-3 overflow-hidden related-card text-decoration-none d-block"
-                    >
-                      <div className="card-body p-3 d-flex gap-3 align-items-center">
-                        <img
-                          src={item.imageUrl || item.image_url}
-                          alt={item.title}
-                          className="rounded-3 object-fit-cover related-thumb"
-                        />
-                        <div className="d-flex flex-column justify-content-between min-w-0">
-                          <span
-                            className={`badge bg-${item.badgeBg || 'primary'} bg-opacity-10 text-${item.badgeBg || 'primary'} align-self-start mb-1 rounded-pill`}
-                          >
-                            {categoryMap[item.category_id] || 'Geral'}
-                          </span>
-                          <h3 className="h6 fw-semibold mb-1 text-truncate-2 text-body">
-                            {item.title}
-                          </h3>
-                          <span className="text-secondary small d-inline-flex align-items-center gap-1">
-                            <IconClock size={14} />
-                            {formatTimeAgo(item.published_at)}
-                          </span>
+                  {relatedNews.map((item) => {
+                    const itemPath = getNewsPath(item);
+                    return (
+                      <Link
+                        key={item.id}
+                        to={itemPath}
+                        className="card border-0 shadow-sm rounded-3 overflow-hidden related-card text-decoration-none d-block"
+                      >
+                        <div className="card-body p-3 d-flex gap-3 align-items-center">
+                          <img
+                            src={item.imageUrl || item.image_url}
+                            alt={item.title}
+                            className="rounded-3 object-fit-cover related-thumb"
+                          />
+                          <div className="d-flex flex-column justify-content-between min-w-0">
+                            <span
+                              className={`badge bg-${item.badgeBg || 'primary'} bg-opacity-10 text-${item.badgeBg || 'primary'} align-self-start mb-1 rounded-pill`}
+                            >
+                              {categoryMap[item.category_id] || 'Geral'}
+                            </span>
+                            <h3 className="h6 fw-semibold mb-1 text-truncate-2 text-body">
+                              {item.title}
+                            </h3>
+                            {Array.isArray(item.tags) && item.tags.length > 0 && (
+                              <div className="d-flex flex-wrap gap-1 mb-1">
+                                {item.tags.slice(0, 2).map((t) => (
+                                  <span
+                                    key={t.id || t.slug}
+                                    className="badge bg-secondary-subtle text-secondary small py-0 px-2 rounded-pill"
+                                  >
+                                    #{t.name}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                            <span className="text-secondary small d-inline-flex align-items-center gap-1">
+                              <IconClock size={14} />
+                              {formatTimeAgo(item.published_at)}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    </a>
-                  ))}
+                      </Link>
+                    );
+                  })}
                 </div>
               </div>
             </aside>

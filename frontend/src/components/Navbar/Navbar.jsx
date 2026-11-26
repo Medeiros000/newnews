@@ -353,7 +353,7 @@ export function Navbar({ onToggleMobileSidebar }) {
                       className="dropdown-item d-flex align-items-center gap-2 py-2 small"
                       onClick={() => {
                         setIsUserDropdownOpen(false);
-                        navigate('/config?section=profile');
+                        navigate('/settings');
                       }}
                     >
                       <IconUser size={16} /> Meu Perfil
@@ -365,12 +365,26 @@ export function Navbar({ onToggleMobileSidebar }) {
                       className="dropdown-item d-flex align-items-center gap-2 py-2 small"
                       onClick={() => {
                         setIsUserDropdownOpen(false);
-                        navigate('/config?section=settings');
+                        navigate('/settings');
                       }}
                     >
                       <IconSettings size={16} /> Configurações
                     </button>
                   </li>
+                  {user?.role === 'ADMIN' && (
+                    <li>
+                      <button
+                        type="button"
+                        className="dropdown-item text-primary fw-semibold d-flex align-items-center gap-2 py-2 small"
+                        onClick={() => {
+                          setIsUserDropdownOpen(false);
+                          navigate('/admin');
+                        }}
+                      >
+                        <IconNews size={16} /> Painel Administrativo
+                      </button>
+                    </li>
+                  )}
                   <li>
                     <hr className="dropdown-divider my-1" />
                   </li>

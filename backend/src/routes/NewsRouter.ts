@@ -1,22 +1,35 @@
 import { Router } from 'express';
 import { NewsController } from '../controllers/NewsController.js';
 import type { INewsController } from '../controllers/interfaces/INewsController.js';
+import { ensureAuthenticated } from '../middlewares/authMiddleware.js';
+import { UserController } from '../controllers/UserController.js';
 
 export class NewsRouter {
   public readonly router: Router;
   private readonly controller: INewsController;
+  private readonly userController: UserController;
 
-  public constructor(controller: INewsController = new NewsController()) {
+  public constructor(
+    controller: INewsController = new NewsController(),
+    userController: UserController = new UserController(),
+  ) {
     this.router = Router();
     this.controller = controller;
+    this.userController = userController;
     this.setupRoutes();
   }
 
   private setupRoutes(): void {
     this.router.get('/', this.controller.getNews.bind(this.controller));
+    this.router.post('/', this.controller.createNews.bind(this.controller));
     this.router.get('/search', this.controller.searchNews.bind(this.controller));
     this.router.get('/news-ingestion', this.controller.startNewsIngestion.bind(this.controller));
+    this.router.get('/slug/:slug/related', this.controller.getRelatedNews.bind(this.controller));
+    this.router.get('/:slug/:idPrefix', this.controller.getNewsBySlugAndIdPrefix.bind(this.controller));
     this.router.get('/:id', this.controller.getNewsById.bind(this.controller));
+    this.router.put('/:id', this.controller.updateNews.bind(this.controller));
+    this.router.delete('/:id', this.controller.deleteNews.bind(this.controller));
     this.router.get('/:id/related', this.controller.getRelatedNews.bind(this.controller));
+    this.router.post('/:id/bookmark', ensureAuthenticated, this.userController.toggleBookmark.bind(this.userController));
   }
 }

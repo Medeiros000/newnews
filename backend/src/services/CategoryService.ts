@@ -4,7 +4,7 @@ import { Category } from '../models/entities/Category.js';
 import { QueryOptions } from '../queries/QueryOptions.js';
 import { ICategoryService } from './interfaces/ICategoryService.js';
 import type { CacheProvider } from './cache/CacheProvider.js';
-import { createCacheProvider } from './cache/createCacheProvider.js';
+import { getSharedCacheProvider } from './cache/createCacheProvider.js';
 
 export class CategoryService implements ICategoryService {
   private readonly prisma: PrismaService;
@@ -12,7 +12,7 @@ export class CategoryService implements ICategoryService {
 
   public constructor(
     prisma: PrismaService = PrismaService.getInstance(),
-    cache: CacheProvider = createCacheProvider(),
+    cache: CacheProvider = getSharedCacheProvider(),
   ) {
     this.prisma = prisma;
     this.cache = cache;

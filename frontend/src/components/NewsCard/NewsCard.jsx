@@ -1,14 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import {
   IconBookmark,
   IconBookmarkFilled,
   IconClock,
   IconChevronRight,
+  IconChevronLeft,
   IconNews,
 } from '@tabler/icons-react';
 
 import { useUserStore, useNavigationStore } from '@/stores';
-import { formatTimeAgo } from '@/utils';
+import { formatTimeAgo, getNewsPath } from '@/utils';
 
 import './NewsCard.css';
 
@@ -39,6 +41,8 @@ export function NewsCard({
 
   if (!article) return null;
 
+  const newsPath = getNewsPath(article);
+
   /**
    * Prevents event bubbling so clicking the bookmark button doesn't open the article
    */
@@ -54,16 +58,18 @@ export function NewsCard({
   return (
     <article
       id={`news-card-${article.id}`}
-      className={`card h-100 border news-card shadow-sm overflow-hidden ${isRead ? 'news-card--read' : ''
-        }`}
+      className={`card h-100 border news-card shadow-sm overflow-hidden ${
+        isRead ? 'news-card--read' : ''
+      }`}
     >
       <div className="news-card-img-wrapper overflow-hidden position-relative">
         {/* Só mostra o botão se existir usuário logado */}
         {user && (
           <button
             type="button"
-            className={`news-card-bookmark-btn ${isBookmarked ? 'is-active' : ''
-              }`}
+            className={`news-card-bookmark-btn ${
+              isBookmarked ? 'is-active' : ''
+            }`}
             onClick={handleBookmark}
             aria-label={bookmarkLabel}
             title={bookmarkLabel}
@@ -94,8 +100,9 @@ export function NewsCard({
       <div className="card-body d-flex flex-column pb-2">
         <div className="d-flex align-items-center gap-2 mb-2">
           <span
-            className={`badge text-bg-${article.badgeBg || 'primary'
-              } align-self-start`}
+            className={`badge text-bg-${
+              article.badgeBg || 'primary'
+            } align-self-start`}
           >
             {categoryMap[article.category_id] || 'Geral'}
           </span>
@@ -108,13 +115,13 @@ export function NewsCard({
         </div>
 
         <h2 className="card-title news-card-title fw-bold mb-2">
-          <button
-            type="button"
+          <Link
+            to={newsPath}
             className="btn btn-link p-0 text-start text-reset text-decoration-none fw-bold stretched-link w-100"
             onClick={() => onSelectArticle?.(article)}
           >
             {article.title}
-          </button>
+          </Link>
         </h2>
 
         <p className="card-text text-secondary news-card-summary mb-3">
@@ -137,70 +144,155 @@ export function NewsCard({
 }
 
 /**
- * Featured 'Hero' news card component.
- * Displays a large, full-bleed image with overlay text for top-tier articles.
+ * Featured 'Hero' news card carousel component.
+ * Displays a carousel of highlighted articles with full-bleed aspect-ratio preserved image,
+ * text overlay, slide controls and indicators, and direct links to each news article.
  *
  * @param {Object} props
- * @param {Object} props.article - The featured article data object
- * @param {Function} [props.onSelectArticle] - Callback triggered when the article is clicked
+ * @param {Object} [props.article] - Fallback single featured article
+ * @param {Array} [props.articles] - Array of featured articles for the carousel
+ * @param {Function} [props.onSelectArticle] - Callback triggered when an article is clicked
  */
-export function HeroCard({ article, onSelectArticle }) {
-  const [imageError, setImageError] = useState(false);
+export function HeroCard({ article, articles, onSelectArticle }) {
+  const [imageErrorMap, setImageErrorMap] = useState({});
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
   const categoryMap = useNavigationStore((state) => state.categoryMap);
 
-  if (!article) return null;
+  const featuredList = Array.isArray(articles) && articles.length > 0
+    ? articles
+    : article
+      ? [article]
+      : [];
 
-  const handleSelect = () => onSelectArticle?.(article);
+  useEffect(() => {
+    if (featuredList.length <= 1 || isPaused) return;
+
+    const timer = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % featuredList.length);
+    }, 5000);
+
+    return () => clearInterval(timer);
+  }, [featuredList.length, isPaused]);
+
+  if (featuredList.length === 0) return null;
+
+  const currentArticle = featuredList[currentIndex] || featuredList[0];
+  const currentPath = getNewsPath(currentArticle);
+
+  const handlePrev = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setCurrentIndex((prev) => (prev === 0 ? featuredList.length - 1 : prev - 1));
+  };
+
+  const handleNext = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setCurrentIndex((prev) => (prev + 1) % featuredList.length);
+  };
 
   return (
     <div
       id="hero-card"
-      className="hero-card rounded-4 overflow-hidden position-relative mb-4"
+      className="hero-card hero-carousel rounded-4 overflow-hidden position-relative mb-4"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
     >
-      {imageError ? (
-        <div className="w-100 h-100 bg-secondary-subtle d-flex align-items-center justify-content-center text-muted">
-          <IconNews size={48} opacity={0.5} />
-        </div>
-      ) : (
-        <img
-          src={article.imageUrl || article.image_url}
-          alt={article.title}
-          className="w-100 h-100 object-fit-cover"
-          loading="eager"
-          onError={() => setImageError(true)}
-        />
-      )}
+      <div className="hero-slide w-100 h-100 position-relative">
+        {imageErrorMap[currentArticle.id] ? (
+          <div className="w-100 h-100 bg-secondary-subtle d-flex align-items-center justify-content-center text-muted">
+            <IconNews size={48} opacity={0.5} />
+          </div>
+        ) : (
+          <img
+            src={currentArticle.imageUrl || currentArticle.image_url}
+            alt={currentArticle.title}
+            className="hero-card-img w-100 h-100 object-fit-cover"
+            loading="eager"
+            onError={() =>
+              setImageErrorMap((prev) => ({ ...prev, [currentArticle.id]: true }))
+            }
+          />
+        )}
 
-      <div className="hero-overlay position-absolute bottom-0 start-0 w-100 p-4 d-flex flex-column justify-content-end">
-        <span
-          className={`badge text-bg-${article.badgeBg || 'primary'
+        <div className="hero-overlay position-absolute bottom-0 start-0 w-100 p-4 d-flex flex-column justify-content-end">
+          <span
+            className={`badge text-bg-${
+              currentArticle.badgeBg || 'primary'
             } align-self-start mb-2`}
-        >
-          {categoryMap[article.category_id] || 'Geral'}
-        </span>
-
-        <h2 className="text-white fw-bold mb-2 hero-card-title">
-          <button
-            type="button"
-            className="btn btn-link p-0 text-start text-white text-decoration-none fw-bold stretched-link w-100 hero-card-title-btn"
-            onClick={handleSelect}
           >
-            {article.title}
-          </button>
-        </h2>
-
-        <p className="text-white text-opacity-75 mb-3 d-none d-sm-block hero-card-summary">
-          {article.summary}
-        </p>
-
-        <div className="d-flex align-items-center gap-3">
-          <span className="text-white text-opacity-50 news-card-time">
-            {formatTimeAgo(article.published_at)}
+            {categoryMap[currentArticle.category_id] || 'Geral'}
           </span>
 
-          <span className="btn btn-light btn-sm rounded-pill fw-semibold px-3 pe-none">
-            Ler mais
-          </span>
+          <h2 className="text-white fw-bold mb-2 hero-card-title">
+            <Link
+              to={currentPath}
+              className="btn btn-link p-0 text-start text-white text-decoration-none fw-bold stretched-link w-100 hero-card-title-btn"
+              onClick={() => onSelectArticle?.(currentArticle)}
+            >
+              {currentArticle.title}
+            </Link>
+          </h2>
+
+          <p className="text-white text-opacity-75 mb-3 d-none d-sm-block hero-card-summary">
+            {currentArticle.summary}
+          </p>
+
+          <div className="d-flex align-items-center justify-content-between">
+            <div className="d-flex align-items-center gap-3">
+              <span className="text-white text-opacity-50 news-card-time">
+                {formatTimeAgo(currentArticle.published_at)}
+              </span>
+
+              <span className="btn btn-light btn-sm rounded-pill fw-semibold px-3 pe-none">
+                Ler mais
+              </span>
+            </div>
+
+            {featuredList.length > 1 && (
+              <div
+                className="hero-carousel-controls d-flex align-items-center gap-2 position-relative"
+                style={{ zIndex: 3 }}
+              >
+                <button
+                  type="button"
+                  className="btn btn-sm btn-dark bg-opacity-75 rounded-circle p-1 d-flex align-items-center justify-content-center hero-ctrl-btn"
+                  onClick={handlePrev}
+                  aria-label="Notícia anterior"
+                  title="Anterior"
+                >
+                  <IconChevronLeft size={18} />
+                </button>
+
+                <div className="hero-carousel-indicators d-flex gap-1 align-items-center px-1">
+                  {featuredList.map((item, idx) => (
+                    <button
+                      key={item.id || idx}
+                      type="button"
+                      className={`hero-dot ${idx === currentIndex ? 'active' : ''}`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setCurrentIndex(idx);
+                      }}
+                      aria-label={`Ir para notícia ${idx + 1}`}
+                    />
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  className="btn btn-sm btn-dark bg-opacity-75 rounded-circle p-1 d-flex align-items-center justify-content-center hero-ctrl-btn"
+                  onClick={handleNext}
+                  aria-label="Próxima notícia"
+                  title="Próxima"
+                >
+                  <IconChevronRight size={18} />
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

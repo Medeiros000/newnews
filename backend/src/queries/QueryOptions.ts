@@ -7,6 +7,7 @@ export class QueryOptions {
 	public readonly limit: number;
 	public readonly query?: string;
 	public readonly category?: string;
+	public readonly tag?: string;
 	public readonly sortBy?: SortField;
 	public readonly order: 'asc' | 'desc';
 
@@ -19,6 +20,7 @@ export class QueryOptions {
 		this.limit = options.limit;
 		this.query = options.query;
 		this.category = options.category;
+		this.tag = options.tag;
 		this.sortBy = options.sortBy;
 		this.order = options.order;
 
