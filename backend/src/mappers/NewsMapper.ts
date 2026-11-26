@@ -12,17 +12,20 @@ export class NewsMapper {
 
     return new News(
       prismaNews.id,
-      prismaNews.category_id,
+      prismaNews.categoryId,
       prismaNews.title,
       prismaNews.description,
       prismaNews.url,
       prismaNews.author,
-      prismaNews.image_url,
+      prismaNews.imageUrl,
       prismaNews.language,
       prismaNews.source,
-      prismaNews.published_at,
+      prismaNews.publishedAt,
       prismaNews.slug ?? '',
       tags,
+      prismaNews.status,
+      prismaNews.viewsCount,
+      prismaNews.authorId,
     );
   }
 }

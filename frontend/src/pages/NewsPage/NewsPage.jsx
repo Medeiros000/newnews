@@ -30,6 +30,21 @@ export function NewsPage() {
   const [relatedNews, setRelatedNews] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [scrollProgress, setScrollProgress] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const totalScroll = document.documentElement.scrollTop;
+      const windowHeight =
+        document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      if (windowHeight > 0) {
+        setScrollProgress((totalScroll / windowHeight) * 100);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const showToast = useToastStore((state) => state.showToastNotification);
   const { bookmarkedArticleIds, toggleArticleBookmark, markArticleAsRead } =
@@ -114,6 +129,15 @@ export function NewsPage() {
 
   return (
     <div className="min-vh-100 d-flex flex-column bg-body">
+      {/* Reading Progress Indicator Bar */}
+      <div
+        className="position-fixed top-0 start-0 z-3 bg-primary"
+        style={{
+          height: '4px',
+          width: `${scrollProgress}%`,
+          transition: 'width 0.1s ease-out',
+        }}
+      />
       <Navbar />
 
       <main className="container-xl py-4 flex-grow-1">

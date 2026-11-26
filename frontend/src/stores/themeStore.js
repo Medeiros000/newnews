@@ -1,55 +1,48 @@
 import { create } from 'zustand';
 
-/**
- * Global theme store (Zustand).
- * Manages the dark/light mode state, persists the preference to localStorage,
- * and syncs the Bootstrap data-bs-theme attribute on the document root.
- */
 export const useThemeStore = create((set) => {
-  /**
-   * Reads the initial theme preference from localStorage.
-   * Falls back to the system preference via matchMedia.
-   * @returns {boolean} true for dark mode, false for light mode
-   */
   const getInitialTheme = () => {
     try {
       const savedTheme = localStorage.getItem('nn_theme');
-      if (savedTheme !== null) return savedTheme === 'dark';
-      return (
-        window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false
-      );
+      if (savedTheme) return savedTheme;
+      return window.matchMedia?.('(prefers-color-scheme: dark)').matches
+        ? 'dark'
+        : 'light';
     } catch {
-      return false;
+      return 'light';
     }
   };
 
-  const initialTheme = getInitialTheme();
+  const initialMode = getInitialTheme();
+  const isDark = initialMode === 'dark';
 
-  // Apply the initial theme to the document root immediately
-  document.documentElement.setAttribute(
-    'data-bs-theme',
-    initialTheme ? 'dark' : 'light',
-  );
+  document.documentElement.setAttribute('data-bs-theme', isDark ? 'dark' : 'light');
 
   return {
-    // Current dark mode state
-    isDarkMode: initialTheme,
+    theme: initialMode,
+    isDarkMode: isDark,
 
-    /**
-     * Toggles between dark and light mode.
-     * Updates the DOM attribute and persists the choice to localStorage.
-     */
+    setTheme: (mode) => {
+      let resolvedDark = mode === 'dark';
+      if (mode === 'system') {
+        resolvedDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
+      }
+      document.documentElement.setAttribute('data-bs-theme', resolvedDark ? 'dark' : 'light');
+      try {
+        localStorage.setItem('nn_theme', mode);
+      } catch {}
+      set({ theme: mode, isDarkMode: resolvedDark });
+    },
+
     toggleDarkMode: () =>
       set((state) => {
-        const newTheme = !state.isDarkMode;
-        document.documentElement.setAttribute(
-          'data-bs-theme',
-          newTheme ? 'dark' : 'light',
-        );
+        const nextDark = !state.isDarkMode;
+        const nextTheme = nextDark ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-bs-theme', nextDark ? 'dark' : 'light');
         try {
-          localStorage.setItem('nn_theme', newTheme ? 'dark' : 'light');
+          localStorage.setItem('nn_theme', nextTheme);
         } catch {}
-        return { isDarkMode: newTheme };
+        return { theme: nextTheme, isDarkMode: nextDark };
       }),
   };
 });

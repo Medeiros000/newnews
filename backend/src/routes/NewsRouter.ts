@@ -1,14 +1,21 @@
 import { Router } from 'express';
 import { NewsController } from '../controllers/NewsController.js';
 import type { INewsController } from '../controllers/interfaces/INewsController.js';
+import { ensureAuthenticated } from '../middlewares/authMiddleware.js';
+import { UserController } from '../controllers/UserController.js';
 
 export class NewsRouter {
   public readonly router: Router;
   private readonly controller: INewsController;
+  private readonly userController: UserController;
 
-  public constructor(controller: INewsController = new NewsController()) {
+  public constructor(
+    controller: INewsController = new NewsController(),
+    userController: UserController = new UserController(),
+  ) {
     this.router = Router();
     this.controller = controller;
+    this.userController = userController;
     this.setupRoutes();
   }
 
@@ -23,5 +30,6 @@ export class NewsRouter {
     this.router.put('/:id', this.controller.updateNews.bind(this.controller));
     this.router.delete('/:id', this.controller.deleteNews.bind(this.controller));
     this.router.get('/:id/related', this.controller.getRelatedNews.bind(this.controller));
+    this.router.post('/:id/bookmark', ensureAuthenticated, this.userController.toggleBookmark.bind(this.userController));
   }
 }

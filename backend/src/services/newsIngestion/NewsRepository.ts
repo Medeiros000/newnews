@@ -63,16 +63,16 @@ export class NewsRepository {
 
 				return {
 					...(item.id ? { id: item.id } : {}),
-					category_id: this.getCategoryId(item.category),
+					categoryId: this.getCategoryId(item.category),
 					title,
 					slug,
 					description: item.description || '',
 					url: item.url,
 					author: item.author,
-					image_url: item.image_url || 'https://via.placeholder.com/800x400',
+					imageUrl: item.image_url || 'https://via.placeholder.com/800x400',
 					language: item.language || 'pt-BR',
 					source: item.source,
-					published_at: item.published_at,
+					publishedAt: item.published_at,
 				};
 			});
 		const result = data.length === 0 ? { count: 0 } : await this.prisma.news.createMany({ data });

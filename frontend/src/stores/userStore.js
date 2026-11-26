@@ -1,52 +1,79 @@
 import { create } from 'zustand';
+import { authService, userService } from '@/services';
 
-/**
- * Global user store (Zustand).
- * Manages authentication state, user profile data, and notifications.
- *
- * State:
- * - user: null means guest visitor; object means authenticated user
- * - isLoadingUser: true while the profile fetch is in progress
- * - notifications: list of unread notification objects
- */
-export const useUserStore = create((set) => ({
-  // null = guest visitor, object = authenticated user
+export const useUserStore = create((set, get) => ({
   user: null,
-
-  // True while user profile is being fetched
-  isLoadingUser: false,
-
-  // List of unread notification objects
+  isLoadingUser: true,
   notifications: [],
 
-  /**
-   * Sets the authenticated user in the store after successful login
-   * @param {Object} userData - The user profile object returned from the API
-   */
-  login: (userData) => {
-    set({ user: userData });
+  initAuth: async () => {
+    const token = localStorage.getItem('nn_access_token');
+    if (!token) {
+      set({ user: null, isLoadingUser: false });
+      return;
+    }
+
+    try {
+      set({ isLoadingUser: true });
+      const res = await authService.getMe();
+      if (res.success && res.data) {
+        set({ user: res.data, isLoadingUser: false });
+      } else {
+        set({ user: null, isLoadingUser: false });
+      }
+    } catch {
+      localStorage.removeItem('nn_access_token');
+      localStorage.removeItem('nn_refresh_token');
+      set({ user: null, isLoadingUser: false });
+    }
   },
 
-  /**
-   * Clears the user session, removing profile and notifications
-   */
-  logout: () => {
+  login: (authData) => {
+    if (authData.accessToken) {
+      localStorage.setItem('nn_access_token', authData.accessToken);
+    }
+    if (authData.refreshToken) {
+      localStorage.setItem('nn_refresh_token', authData.refreshToken);
+    }
+    set({ user: authData.user || authData, isLoadingUser: false });
+  },
+
+  logout: async () => {
+    try {
+      await authService.logout();
+    } catch {}
+    localStorage.removeItem('nn_access_token');
+    localStorage.removeItem('nn_refresh_token');
     set({ user: null, notifications: [] });
   },
 
-  /**
-   * Resets the user state without a full logout flow
-   */
+  updateUserProfile: async (profileData) => {
+    const res = await userService.updateProfile(profileData);
+    if (res.success && res.data) {
+      set((state) => ({
+        user: { ...state.user, ...res.data },
+      }));
+    }
+    return res;
+  },
+
+  updateUserPreferences: async (prefData) => {
+    const res = await userService.updatePreferences(prefData);
+    if (res.success && res.data) {
+      set((state) => ({
+        user: {
+          ...state.user,
+          preferences: res.data,
+        },
+      }));
+    }
+    return res;
+  },
+
   clearUser: () => set({ user: null }),
 
-  /**
-   * Removes a specific notification by ID
-   * @param {string|number} id - The ID of the notification to dismiss
-   */
   dismissNotification: (id) =>
     set((state) => ({
-      notifications: state.notifications.filter(
-        (notification) => notification.id !== id,
-      ),
+      notifications: state.notifications.filter((n) => n.id !== id),
     })),
 }));

@@ -7,6 +7,51 @@ datasource db {
     provider = "postgresql"
 }
 
+enum Role {
+    USER
+    ADMIN
+}
+
+enum NewsStatus {
+    DRAFT
+    PUBLISHED
+    ARCHIVED
+}
+
+model User {
+    id        String   @id @default(uuid())
+    name      String
+    email     String   @unique
+    password  String
+    role      Role     @default(USER)
+    isActive  Boolean  @default(true) @map("is_active")
+    bio       String?
+    avatarUrl String?  @map("avatar_url")
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    preferences   UserPreference?
+    newsAuthored  News[]           @relation("AuthorNews")
+    bookmarks     Bookmark[]
+    readingHistory ReadingHistory[]
+
+    @@map("users")
+}
+
+model UserPreference {
+    id                 String   @id @default(uuid())
+    userId             String   @unique @map("user_id")
+    theme              String   @default("system")
+    emailNotifications Boolean  @default(true) @map("email_notifications")
+    newsletter         Boolean  @default(false)
+    favoriteCategories String[] @default([]) @map("favorite_categories")
+    updatedAt          DateTime @updatedAt @map("updated_at")
+
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@map("user_preferences")
+}
+
 model Category {
     id    String @id @default(uuid())
     name  String @unique
@@ -31,22 +76,59 @@ model Tag {
 }
 
 model News {
-    id           String   @id @default(uuid())
-    category_id  String
+    id           String     @id @default(uuid())
+    categoryId   String     @map("category_id")
+    authorId     String?    @map("author_id")
     title        String
-    slug         String   @default("")
+    slug         String     @default("")
     description  String
-    url          String   @unique
+    url          String     @unique
     author       String
-    image_url    String
-    language     String
+    imageUrl     String     @map("image_url")
+    language     String     @default("pt-BR")
     source       String
-    published_at DateTime
+    status       NewsStatus @default(PUBLISHED)
+    viewsCount   Int        @default(0) @map("views_count")
+    publishedAt  DateTime   @default(now()) @map("published_at")
+    createdAt    DateTime   @default(now()) @map("created_at")
+    updatedAt    DateTime   @updatedAt @map("updated_at")
 
-    category Category @relation(fields: [category_id], references: [id])
-    tags     Tag[]
+    category       Category         @relation(fields: [categoryId], references: [id])
+    authorUser     User?            @relation("AuthorNews", fields: [authorId], references: [id], onDelete: SetNull)
+    tags           Tag[]
+    bookmarks      Bookmark[]
+    readingHistory ReadingHistory[]
 
     @@index([slug])
+    @@index([categoryId])
+    @@index([status])
+    @@index([publishedAt])
     @@index([title(ops: raw("gin_trgm_ops"))], type: Gin, map: "news_title_trgm_idx")
     @@map("news")
+}
+
+model Bookmark {
+    id        String   @id @default(uuid())
+    userId    String   @map("user_id")
+    newsId    String   @map("news_id")
+    createdAt DateTime @default(now()) @map("created_at")
+
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+    news News @relation(fields: [newsId], references: [id], onDelete: Cascade)
+
+    @@unique([userId, newsId])
+    @@map("bookmarks")
+}
+
+model ReadingHistory {
+    id       String   @id @default(uuid())
+    userId   String   @map("user_id")
+    newsId   String   @map("news_id")
+    viewedAt DateTime @default(now()) @map("viewed_at")
+
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+    news News @relation(fields: [newsId], references: [id], onDelete: Cascade)
+
+    @@index([userId, viewedAt])
+    @@map("reading_histories")
 }

@@ -14,5 +14,8 @@ export class News {
 		public readonly published_at: Date,
 		public readonly slug: string = '',
 		public readonly tags: Tag[] = [],
+		public readonly status: string = 'PUBLISHED',
+		public readonly views_count: number = 0,
+		public readonly author_id: string | null = null,
 	) {}
 }

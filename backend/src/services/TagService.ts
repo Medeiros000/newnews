@@ -89,7 +89,7 @@ export class TagService implements ITagService {
       },
       skip: (page - 1) * limit,
       take: limit,
-      orderBy: { published_at: 'desc' },
+      orderBy: { publishedAt: 'desc' },
       include: {
         category: true,
         tags: true,

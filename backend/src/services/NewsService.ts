@@ -54,7 +54,7 @@ export class NewsService implements INewsService {
         skip: (page - 1) * limit,
         take: limit,
         where,
-        orderBy: { published_at: 'desc' },
+        orderBy: { publishedAt: 'desc' },
         include: {
           category: true,
           tags: true,
@@ -183,14 +183,14 @@ export class NewsService implements INewsService {
         take: limit * 2,
       });
 
-      // Ordena por quantidade de tags em comum DESC e depois published_at DESC
+      // Ordena por quantidade de tags em comum DESC e depois publishedAt DESC
       candidatesByTag.sort((a, b) => {
         const sharedA = a.tags.filter((t) => tagIds.includes(t.id)).length;
         const sharedB = b.tags.filter((t) => tagIds.includes(t.id)).length;
         if (sharedB !== sharedA) {
           return sharedB - sharedA;
         }
-        return b.published_at.getTime() - a.published_at.getTime();
+        return b.publishedAt.getTime() - a.publishedAt.getTime();
       });
 
       for (const item of candidatesByTag) {
@@ -243,10 +243,10 @@ export class NewsService implements INewsService {
       const fallbackRecent = await this.prisma.news.findMany({
         where: {
           id: { notIn: excludedIds },
-          category_id: currentNews.category_id, // prefere mesma categoria se houver
+          categoryId: currentNews.categoryId, // prefere mesma categoria se houver
         },
         take: needed,
-        orderBy: { published_at: 'desc' },
+        orderBy: { publishedAt: 'desc' },
         include: {
           category: true,
           tags: true,
@@ -265,7 +265,7 @@ export class NewsService implements INewsService {
         const anyRecent = await this.prisma.news.findMany({
           where: { id: { notIn: allExcluded } },
           take: remainingNeeded,
-          orderBy: { published_at: 'desc' },
+          orderBy: { publishedAt: 'desc' },
           include: { category: true, tags: true },
         });
 
@@ -309,11 +309,11 @@ export class NewsService implements INewsService {
         description: data.description,
         url: data.url,
         author: data.author || 'Redação',
-        image_url: data.image_url || 'https://via.placeholder.com/800x400',
+        imageUrl: data.image_url || 'https://via.placeholder.com/800x400',
         language: data.language || 'pt-BR',
         source: new URL(data.url).hostname.replace(/^www\./, ''),
-        published_at: data.published_at || new Date(),
-        category_id: categoryRecord.id,
+        publishedAt: data.published_at || new Date(),
+        categoryId: categoryRecord.id,
         tags: {
           connectOrCreate: tagConnectOrCreate,
         },
@@ -335,7 +335,7 @@ export class NewsService implements INewsService {
     });
     if (!existing) return null;
 
-    let categoryId = existing.category_id;
+    let categoryId = existing.categoryId;
     if (data.category) {
       const cat = await this.prisma.category.findFirst({
         where: {
@@ -363,10 +363,10 @@ export class NewsService implements INewsService {
         ...(data.description && { description: data.description }),
         ...(data.url && { url: data.url }),
         ...(data.author && { author: data.author }),
-        ...(data.image_url && { image_url: data.image_url }),
+        ...(data.image_url && { imageUrl: data.image_url }),
         ...(data.language && { language: data.language }),
-        ...(data.published_at && { published_at: data.published_at }),
-        category_id: categoryId,
+        ...(data.published_at && { publishedAt: data.published_at }),
+        categoryId,
         ...(tagConnectOrCreate && {
           tags: {
             set: [], // Limpa relações antigas
