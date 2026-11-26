@@ -28,6 +28,11 @@ services:
       timeout: 5s
       retries: 10
 
+  redis:
+    image: redis:8-alpine
+    ports:
+      - "6379:6379"
+
   backend:
     build:
       context: ./backend
@@ -44,15 +49,9 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_started
+      - postgres
+      - redis
 
-  redis:
-    image: redis:8-alpine
-    ports:
-      - "6379:6379"
 
 volumes:
   postgres_data:
