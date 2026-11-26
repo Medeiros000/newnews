@@ -1,3 +1,5 @@
+import { Tag } from './Tag.js';
+
 export class News {
 	constructor(
 		public readonly id: string,
@@ -10,5 +12,10 @@ export class News {
 		public readonly language: string,
 		public readonly source: string,
 		public readonly published_at: Date,
+		public readonly slug: string = '',
+		public readonly tags: Tag[] = [],
+		public readonly status: string = 'PUBLISHED',
+		public readonly views_count: number = 0,
+		public readonly author_id: string | null = null,
 	) {}
 }

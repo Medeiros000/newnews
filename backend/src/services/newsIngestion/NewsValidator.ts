@@ -4,6 +4,7 @@ import { NormalizedNews } from './NewsNormalizer.js';
 export const newsValidationSchema = z.object({
 	id: z.string().min(1).optional(),
 	title: z.string().min(1).max(255),
+	slug: z.string().max(255).optional(),
 	description: z.string().min(1).max(1000),
 	url: z.url().max(2048).optional(),
 	author: z.string().min(1).max(120),

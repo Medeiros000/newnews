@@ -1,6 +1,6 @@
 import { NewsIngestionPipeline } from '../services/newsIngestion/NewsIngestionPipeline.js';
 import type { CacheProvider } from '../services/cache/CacheProvider.js';
-import { createCacheProvider } from '../services/cache/createCacheProvider.js';
+import { getSharedCacheProvider } from '../services/cache/createCacheProvider.js';
 
 export const NEWS_INGESTION_INTERVAL_MS = 60 * 60 * 1000;
 
@@ -58,7 +58,15 @@ export class NewsIngestionWorker {
 }
 
 export function createNewsIngestionWorker(cache?: CacheProvider): NewsIngestionWorker {
-	return new NewsIngestionWorker(new NewsIngestionPipeline(cache ?? createCacheProvider()));
+	return new NewsIngestionWorker(new NewsIngestionPipeline(cache ?? getSharedCacheProvider()));
 }
 
-export const newsIngestionWorker = createNewsIngestionWorker();
+let newsIngestionWorker: NewsIngestionWorker | undefined;
+
+export function getNewsIngestionWorker(): NewsIngestionWorker {
+	if (!newsIngestionWorker) {
+		newsIngestionWorker = createNewsIngestionWorker();
+	}
+
+	return newsIngestionWorker;
+}

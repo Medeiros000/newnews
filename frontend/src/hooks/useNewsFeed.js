@@ -17,12 +17,14 @@ import { APP_CONFIG } from '@/utils';
 export function useNewsFeed({
   navSelectedCategory,
   searchQuery,
+  tagQuery,
   bookmarkedArticleIds,
 }) {
   const [categories, setCategories] = useState(['Todos']);
   const [activeCategory, setActiveCategory] = useState('Todos');
   const [articlesList, setArticlesList] = useState([]);
   const [heroArticle, setHeroArticle] = useState(null);
+  const [heroArticles, setHeroArticles] = useState([]);
   const [page, setPage] = useState(1);
   const [hasMoreArticles, setHasMoreArticles] = useState(false);
   const [error, setError] = useState(null);
@@ -67,7 +69,7 @@ export function useNewsFeed({
 
   // True when no search and no category filter are applied
   const isDefaultFeed =
-    effectiveCategory === 'Todos' && !cleanQuery && !isSavedTabActive;
+    effectiveCategory === 'Todos' && !cleanQuery && !tagQuery && !isSavedTabActive;
 
   /**
    * Fetches a page of articles from the API.
@@ -90,6 +92,7 @@ export function useNewsFeed({
         const res = await newsService.getNews({
           category: isSavedTabActive ? 'Todos' : effectiveCategory,
           query: cleanQuery,
+          tag: tagQuery?.trim() || undefined,
           page: targetPage,
           limit: APP_CONFIG.DEFAULT_PAGE_LIMIT,
         });
@@ -108,9 +111,10 @@ export function useNewsFeed({
             : false;
           setHasMoreArticles(hasMore);
 
-          // The first article in the default feed is spotlighted as hero
+          // The top articles in the default feed are spotlighted in the hero carousel
           if (!isLoadMore && isDefaultFeed) {
             setHeroArticle(list[0] || null);
+            setHeroArticles(list.slice(0, 5));
           }
         }
       } catch (err) {
@@ -123,7 +127,7 @@ export function useNewsFeed({
         }
       }
     },
-    [effectiveCategory, cleanQuery, isSavedTabActive, isDefaultFeed],
+    [effectiveCategory, cleanQuery, tagQuery, isSavedTabActive, isDefaultFeed],
   );
 
   // Re-fetch articles whenever the effective filters change
@@ -141,17 +145,21 @@ export function useNewsFeed({
     return articlesList;
   }, [articlesList, isSavedTabActive, bookmarkedArticleIds]);
 
-  // Only show the hero card on the default feed with a trending article
-  const shouldShowHero = Boolean(isDefaultFeed && heroArticle);
+  // Only show the hero card on the default feed with trending articles
+  const shouldShowHero = Boolean(isDefaultFeed && (heroArticles.length > 0 || heroArticle));
 
-  // Exclude the hero article from the grid to avoid duplication
-  const gridArticles = useMemo(
-    () =>
-      shouldShowHero
-        ? displayArticles.filter((a) => a.id !== heroArticle.id)
-        : displayArticles,
-    [displayArticles, heroArticle, shouldShowHero],
-  );
+  // Exclude the hero articles from the grid to avoid duplication
+  const gridArticles = useMemo(() => {
+    if (!shouldShowHero) return displayArticles;
+    const heroIds = new Set(
+      heroArticles.length > 0
+        ? heroArticles.map((a) => a.id)
+        : heroArticle
+          ? [heroArticle.id]
+          : [],
+    );
+    return displayArticles.filter((a) => !heroIds.has(a.id));
+  }, [displayArticles, heroArticles, heroArticle, shouldShowHero]);
 
   // Human-readable summary shown below the search bar or saved tab header
   const searchResultsSummary = useMemo(() => {
@@ -168,6 +176,7 @@ export function useNewsFeed({
     articlesList,
     gridArticles,
     heroArticle,
+    heroArticles,
     isLoading: loadingState.initial,
     isLoadingMore: loadingState.more,
     error,

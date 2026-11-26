@@ -1,8 +1,10 @@
 import { CurrentsArticle } from './CurrentsApiClient.js';
+import { generateSlug } from '../../utils/slug.js';
 
 export interface NormalizedNews {
 	id?: string;
 	title?: string;
+	slug?: string;
 	description?: string;
 	url?: string;
 	author: string;
@@ -35,10 +37,13 @@ export class NewsNormalizer {
 
 		// Extrai o domínio real da URL em vez de usar o campo "language" como fallback
 		const source = this.extractDomain(raw.url);
+		const title = raw.title || raw.description?.slice(0, 60) || 'Sem título';
+		const slug = generateSlug(title);
 
 		return {
 			id: raw.id,
-			title: raw.title || raw.description?.slice(0, 60) || 'Sem título',
+			title,
+			slug,
 			description: raw.description || 'Conteúdo não informado.',
 			url: raw.url,
 			author: raw.author || 'Redação',

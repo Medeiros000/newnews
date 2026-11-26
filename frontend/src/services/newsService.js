@@ -39,6 +39,16 @@ export const newsService = {
   },
 
   /**
+   * Fetches a single news article by slug and 8-char id prefix.
+   * @param {string} slug - The news slug
+   * @param {string} idPrefix - The 8-character ID prefix
+   */
+  async getNewsBySlugAndPrefix(slug, idPrefix) {
+    const { data: res } = await api.get(`/news/${slug}/${idPrefix}`);
+    return { success: true, data: res.data ?? res };
+  },
+
+  /**
    * Fetches available news categories from the API.
    */
   async getCategories() {

@@ -1,7 +1,29 @@
-import { createCacheProvider } from '../../../src/services/cache/createCacheProvider.js';
+import {
+	createCacheProvider,
+	getSharedCacheProvider,
+} from '../../../src/services/cache/createCacheProvider.js';
 import { NullCacheProvider } from '../../../src/services/cache/NullCacheProvider.js';
 
 describe('createCacheProvider', () => {
+	it('reutiliza o mesmo provedor compartilhado no processo', () => {
+		const consoleWarn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+		try {
+			const config = {
+				USE_REDIS: false,
+				REDIS_URL: 'redis://invalid-host:6379',
+			};
+
+			const first = getSharedCacheProvider(config);
+			const second = getSharedCacheProvider(config);
+
+			expect(first).toBeInstanceOf(NullCacheProvider);
+			expect(second).toBe(first);
+			expect(consoleWarn).toHaveBeenCalledTimes(1);
+		} finally {
+			consoleWarn.mockRestore();
+		}
+	});
+
 	it('seleciona NullCacheProvider sem instanciar Redis quando desabilitado', async () => {
 		const consoleWarn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
 		try {

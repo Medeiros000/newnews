@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { RegistrationForm } from '@/components/RegistrationForm';
 import { userService } from '@/services';
+import { useUserStore, useToastStore } from '@/stores';
 import './RegisterPage.css';
 
 /**
@@ -9,21 +10,23 @@ import './RegisterPage.css';
  */
 export const RegisterPage = () => {
   const navigate = useNavigate();
+  const login = useUserStore((state) => state.login);
+  const showToast = useToastStore((state) => state.showToastNotification);
 
-  /**
-   * Submits user registration data to the backend API.
-   * On success, redirects the user to the login page.
-   *
-   * @param {Object} formData - Validated user registration details
-   */
   const handleRegister = async (formData) => {
     try {
-      await userService.register(formData);
-      navigate('/login');
+      const res = await userService.register(formData);
+      if (res?.data) {
+        login(res.data);
+        showToast('Conta criada com sucesso! Bem-vindo ao NewsHub.', 'success');
+        navigate('/');
+      } else {
+        navigate('/login');
+      }
     } catch (err) {
-      throw new Error(
-        err?.response?.data?.message || err.message || 'Erro ao criar conta.',
-      );
+      const msg = err?.response?.data?.error || err?.response?.data?.message || err.message || 'Erro ao criar conta.';
+      showToast(msg, 'error');
+      throw new Error(msg);
     }
   };
 

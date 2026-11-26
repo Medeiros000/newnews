@@ -21,6 +21,7 @@ describe('QueryOptions', () => {
 			limit: 100,
 			query: 'notícias recentes',
 			category: 'tecnologia',
+			tag: undefined,
 			sortBy: 'title',
 			order: 'asc',
 		});

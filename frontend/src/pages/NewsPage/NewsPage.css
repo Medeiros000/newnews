@@ -62,3 +62,20 @@
     max-height: 280px;
   }
 }
+
+/* Article tag badge styling */
+.article-tag-badge {
+  background-color: var(--bs-tertiary-bg);
+  color: var(--bs-body-color);
+  border: 1px solid var(--bs-border-color);
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all var(--nn-transition-fast);
+}
+
+.article-tag-badge:hover {
+  background-color: var(--bs-primary);
+  color: #fff;
+  border-color: var(--bs-primary);
+  transform: translateY(-1px);
+}

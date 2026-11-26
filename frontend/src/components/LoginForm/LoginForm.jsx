@@ -53,15 +53,16 @@ export function LoginForm({ titleId, onRegister, showBackLink = false }) {
     setSubmitting(true);
     try {
       const res = await userService.login(data);
-      if (res?.data?.user) {
-        login(res.data.user);
+      if (res?.data) {
+        login(res.data);
+        showToast('Login realizado com sucesso!', 'success', '👋');
         onRegister?.();
       }
-    } catch {
+    } catch (err) {
       showToast(
-        'Serviço de autenticação temporariamente indisponível.',
-        'info',
-        'ℹ️',
+        err.response?.data?.error || 'Credenciais inválidas.',
+        'error',
+        '⚠️',
       );
     } finally {
       setSubmitting(false);

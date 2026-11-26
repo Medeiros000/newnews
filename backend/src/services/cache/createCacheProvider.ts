@@ -8,6 +8,8 @@ export interface CacheConfig {
 	REDIS_URL: string;
 }
 
+let sharedCacheProvider: CacheProvider | undefined;
+
 export function createCacheProvider(config: CacheConfig = env): CacheProvider {
 	if (!config.USE_REDIS) {
 		console.warn('Cache Redis desabilitado; usando NullCacheProvider.');
@@ -16,4 +18,12 @@ export function createCacheProvider(config: CacheConfig = env): CacheProvider {
 
 	console.warn('Cache Redis habilitado.');
 	return new RedisCacheProvider(config.REDIS_URL);
+}
+
+export function getSharedCacheProvider(config: CacheConfig = env): CacheProvider {
+	if (!sharedCacheProvider) {
+		sharedCacheProvider = createCacheProvider(config);
+	}
+
+	return sharedCacheProvider;
 }
