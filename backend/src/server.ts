@@ -1,9 +1,7 @@
 import type { Server } from 'http';
-import { App } from './app.js';
+import { app } from './app.js';
 import { env } from './config/env.js';
 import { PrismaService } from './services/PrismaService.js';
-
-const app = new App();
 
 const server: Server = app.listen(env.PORT, () => {
 	console.log(`API server listening on http://localhost:${env.PORT}`);
